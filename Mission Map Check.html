@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mission Map Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+:root{
+  --crimson:#822336; --crimson-ink:#6b1c2c; --crimson-soft:#f6e9ec;
+  --bg:#f7f6f6; --surface:#ffffff; --fg:#1d1a1b; --muted:#5f5b5d; --line:#d0d1d3; --line-soft:#e6e5e6;
+  --good:#1f6b45; --good-soft:#e5f2ea; --warn:#8a5a00; --warn-soft:#fbf1dc; --bad:#a3271f; --bad-soft:#fbe7e5;
+  --brand:#822336; --brand-2:#6a1b2b; --on-brand:#ffffff;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --crimson:#d9677c; --crimson-ink:#ef93a3; --crimson-soft:#3a1d24;
+  --bg:#161314; --surface:#211d1f; --fg:#efeaeb; --muted:#aca6a8; --line:#4a4447; --line-soft:#332e30;
+  --good:#7fd1a2; --good-soft:#1c3327; --warn:#f0c46a; --warn-soft:#3a2f17; --bad:#f08b80; --bad-soft:#3b1f1c; color-scheme:dark}}
+*{box-sizing:border-box}
+html{scroll-padding-top:calc(env(safe-area-inset-top,0px) + 80px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--brand)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--brand);color:var(--on-brand)}
+header.top .wrap{display:flex;align-items:center;gap:16px;padding-block:10px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:800;font-size:1.45rem;letter-spacing:.02em;text-transform:uppercase;line-height:1}
+.brand small{display:block;font-family:var(--body);font-weight:600;font-size:.72rem;letter-spacing:.08em;opacity:.85}
+.prog{flex:1;min-width:180px}
+.prog-label{font-size:.8rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;opacity:.9}
+.bar{height:6px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden;margin-top:4px}
+.bar i{display:block;height:100%;background:#fff;width:0;transition:width .3s}
+.hdr-stats{display:flex;gap:18px}
+.hdr-total{font-family:var(--display);font-weight:700;font-size:1.3rem;text-align:right;line-height:1.05}
+.hdr-total span{display:block;font-family:var(--body);font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
+main .wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;padding-block:24px 48px;align-items:start}
+@media (max-width:860px){main .wrap{grid-template-columns:minmax(0,1fr)}}
+.panel{min-width:0}
+h1,h2,h3{text-wrap:balance}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(2rem,5vw,2.8rem);line-height:1;margin:0 0 8px;text-transform:uppercase;letter-spacing:.01em}
+h2{font-family:var(--display);font-weight:700;font-size:1.35rem;margin:26px 0 8px;text-transform:uppercase;letter-spacing:.03em}
+.eyebrow{font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--crimson)}
+.lede{color:var(--muted);max-width:64ch;margin:0 0 16px}
+.hint{font-size:.9rem;color:var(--muted);margin:0 0 10px}
+.opts{display:grid;gap:10px}
+.opts.two{grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.opt{font:inherit;color:var(--fg);text-align:left;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;transition:border-color .15s,background .15s;width:100%}
+.opt:hover{border-color:var(--crimson)}
+.opt.on{border-color:var(--crimson);background:var(--crimson-soft)}
+.opt .mark{width:22px;height:22px;border:2px solid var(--line);border-radius:50%;display:grid;place-items:center;flex:none}
+.opt.multi .mark{border-radius:5px}
+.opt.on .mark{border-color:var(--crimson);background:var(--crimson)}
+.opt.on .mark::after{content:"";width:8px;height:8px;background:#fff;border-radius:50%}
+.opt.multi.on .mark::after{width:10px;height:6px;border:2px solid #fff;border-top:0;border-right:0;background:none;border-radius:0;transform:rotate(-45deg) translate(1px,-1px)}
+.opt b{display:block;font-weight:700}
+.opt p{margin:2px 0 0;font-size:.9rem;color:var(--muted)}
+.opt:disabled{opacity:.45;cursor:not-allowed}
+.nav{display:flex;justify-content:space-between;gap:12px;margin-top:26px;flex-wrap:wrap}
+.btn{font:inherit;font-weight:700;border-radius:8px;padding:11px 20px;cursor:pointer;border:1.5px solid var(--brand);background:var(--brand);color:var(--on-brand)}
+.btn:hover{filter:brightness(1.15)}
+.btn.ghost{background:transparent;color:var(--crimson)}
+.btn.ghost:hover{background:var(--crimson-soft);filter:none}
+.btn.small{padding:6px 12px;font-size:.88rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.opt:focus-visible,.car:focus-visible,.chip:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,.flip:focus-visible{outline:3px solid var(--crimson);outline-offset:2px}
+.need{background:var(--warn-soft);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:.9rem;font-weight:600;margin-top:12px}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;max-width:680px}
+label.f{display:grid;gap:4px;font-weight:600;font-size:.92rem}
+label.f span{font-weight:400;color:var(--muted);font-size:.85rem}
+input[type=text],input[type=search],select,textarea{font:inherit;color:var(--fg);background:var(--surface);border:1.5px solid var(--line);border-radius:8px;padding:9px 11px;width:100%}
+textarea{min-height:80px;resize:vertical}
+.how{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:20px 0}
+.how div{border-left:3px solid var(--crimson);padding:4px 0 4px 12px}
+.how b{display:block}
+.how span{color:var(--muted);font-size:.92rem}
+/* careers */
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chip{font:inherit;font-size:.85rem;font-weight:600;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:4px 12px;cursor:pointer}
+.chip.on{background:var(--brand);border-color:var(--brand);color:var(--on-brand)}
+.cars{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.car{font:inherit;color:var(--fg);text-align:left;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;display:grid;gap:2px}
+.car:hover{border-color:var(--crimson)}
+.car.on{border-color:var(--crimson);background:var(--crimson-soft)}
+.car b{font-size:1.02rem}
+.car span{font-size:.84rem;color:var(--muted)}
+.car em{font-style:normal;font-family:var(--display);font-weight:700;font-size:1.15rem;color:var(--crimson)}
+.picked{background:var(--surface);border:1.5px solid var(--crimson);border-radius:12px;padding:14px 16px;margin:14px 0;display:grid;gap:6px}
+.picked .t{font-family:var(--display);font-size:1.6rem;font-weight:800;text-transform:uppercase;line-height:1}
+.picked dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:4px 0 0;font-size:.93rem}
+.picked dt{font-weight:700;color:var(--muted)}
+.picked dd{margin:0}
+/* sidebar */
+aside.side{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 84px)}
+@media (max-width:860px){aside.side{position:static}}
+.side h3{font-family:var(--display);font-size:1.1rem;text-transform:uppercase;letter-spacing:.05em;margin:0 0 2px}
+.side .who{font-size:.85rem;color:var(--muted);margin-bottom:12px}
+.stair{display:grid;gap:8px}
+.st{display:grid;grid-template-columns:28px minmax(0,1fr);gap:8px;align-items:start}
+.st i{font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:.85rem;background:var(--line-soft);color:var(--muted)}
+.st.done i{background:var(--brand);color:var(--on-brand)}
+.st.cur i{outline:2px solid var(--crimson);outline-offset:2px}
+.st b{display:block;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.st span{font-size:.9rem;display:block;overflow-wrap:anywhere}
+.st.mission{border-bottom:1px dashed var(--line);padding-bottom:8px}
+.meters{display:grid;gap:10px}
+.m{display:grid;gap:3px}
+.m .lab{display:flex;justify-content:space-between;font-size:.88rem;font-variant-numeric:tabular-nums}
+.m .lab b{font-weight:700}
+.mbar{height:9px;background:var(--line-soft);border-radius:5px;overflow:hidden}
+.mbar i{display:block;height:100%;background:var(--crimson);transition:width .4s}
+.mbar.low i{background:var(--warn)}
+.money{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.money div{background:var(--bg);border-radius:8px;padding:8px 10px}
+.money span{display:block;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.money b{font-family:var(--display);font-size:1.35rem;font-variant-numeric:tabular-nums}
+.where{font-size:.88rem;background:var(--crimson-soft);border-radius:8px;padding:8px 10px;margin-bottom:12px}
+/* checks */
+.checks{display:grid;gap:10px}
+.ck{display:grid;grid-template-columns:30px minmax(0,1fr);gap:10px;background:var(--surface);border:1px solid var(--line);border-left-width:5px;border-radius:10px;padding:12px 14px}
+.ck.ok{border-left-color:var(--good)} .ck.warn{border-left-color:var(--warn)} .ck.bad{border-left-color:var(--bad)}
+.ck .ic{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:.9rem}
+.ck.ok .ic{background:var(--good-soft);color:var(--good)} .ck.warn .ic{background:var(--warn-soft);color:var(--warn)} .ck.bad .ic{background:var(--bad-soft);color:var(--bad)}
+.ck b{display:block}
+.ck p{margin:2px 0 0;font-size:.93rem;color:var(--muted)}
+.ck .fix{margin-top:6px}
+.score{display:flex;align-items:center;gap:18px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:14px 0}
+.ring{--p:0;width:92px;height:92px;border-radius:50%;background:conic-gradient(var(--crimson) calc(var(--p)*1%),var(--line-soft) 0);display:grid;place-items:center;flex:none}
+.ring b{width:72px;height:72px;border-radius:50%;background:var(--surface);display:grid;place-items:center;font-family:var(--display);font-size:1.9rem;font-weight:800}
+/* game */
+.story{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0}
+.story p{margin:0 0 8px} .story p:last-child{margin:0}
+.recap{font-size:.92rem;color:var(--muted);border-top:1px dashed var(--line);margin-top:10px;padding-top:10px}
+.result{border-radius:10px;padding:14px 16px;margin:14px 0;background:var(--crimson-soft)}
+.result b{display:block;margin-bottom:4px}
+.deltas{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.d{font-size:.8rem;font-weight:700;padding:2px 9px;border-radius:999px;font-variant-numeric:tabular-nums}
+.d.up{background:var(--good-soft);color:var(--good)} .d.dn{background:var(--bad-soft);color:var(--bad)}
+.deal{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:12px 0}
+@media (max-width:680px){.deal{grid-template-columns:minmax(0,1fr)}}
+.flip{font:inherit;color:inherit;background:none;border:0;padding:0;perspective:1000px;height:250px;cursor:pointer;text-align:left;display:block;width:100%}
+.flip:disabled{cursor:default}
+.flip-in{display:block;position:relative;height:100%;transition:transform .6s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d}
+.flip:not(:disabled):hover .flip-in{transform:translateY(-5px) rotate(-1.5deg)}
+.flip.flipped .flip-in{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.back{background:repeating-linear-gradient(135deg,var(--brand) 0 14px,var(--brand-2) 14px 28px);color:var(--on-brand);align-items:center;justify-content:center;text-align:center;font-weight:700;letter-spacing:.14em;text-transform:uppercase;font-size:.8rem;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+.back .q{font-family:var(--display);font-size:4.5rem;line-height:1;letter-spacing:0}
+.front{transform:rotateY(180deg);background:var(--surface);border:2px solid var(--line);justify-content:center}
+.front small{font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.front b{font-family:var(--display);font-size:1.5rem;line-height:1.05;text-transform:uppercase}
+.front p{margin:0;font-size:.9rem;color:var(--muted)}
+.flip.good .front small{color:var(--good)}
+.flip.chosen .front{border-color:var(--crimson);box-shadow:0 0 0 4px var(--crimson-soft)}
+.flip.dim .front{opacity:.55}
+.shield{border-radius:10px;padding:12px 14px;margin:12px 0;font-weight:600}
+.shield.yes{background:var(--good-soft);color:var(--good)}
+.shield.no{background:var(--warn-soft);color:var(--warn)}
+.shield q{font-weight:400;display:block;margin-top:4px;font-style:italic;quotes:none}
+/* results */
+.outcome{border-radius:14px;padding:20px 22px;margin:8px 0 18px;color:var(--on-brand);background:var(--brand)}
+.outcome.mid{background:#7a5a10} .outcome.low{background:#5f5b5d}
+.outcome small{font-size:.78rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+.outcome b{display:block;font-family:var(--display);font-size:clamp(2rem,5vw,2.8rem);line-height:1;text-transform:uppercase;margin:4px 0 8px}
+.outcome p{margin:0;max-width:62ch}
+.tl{display:grid;gap:0;border-left:3px solid var(--line);margin-left:8px}
+.tl li{list-style:none;position:relative;padding:0 0 16px 18px}
+.tl li::before{content:"";position:absolute;left:-9px;top:4px;width:15px;height:15px;border-radius:50%;background:var(--surface);border:3px solid var(--crimson)}
+.tl ul{padding:0;margin:0}
+.tl b{display:block}
+.tl span{display:block;font-size:.92rem;color:var(--muted)}
+.vgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:12px 0}
+.vbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.vbox span{display:block;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.vbox b{font-family:var(--display);font-size:1.6rem;line-height:1.1;font-variant-numeric:tabular-nums}
+.vbox p{margin:2px 0 0;font-size:.83rem;color:var(--muted)}
+.tips{display:grid;gap:10px;padding:0;margin:0;counter-reset:t}
+.tips li{list-style:none;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px 12px 50px;position:relative;counter-increment:t}
+.tips li::before{content:counter(t);position:absolute;left:14px;top:12px;width:24px;height:24px;border-radius:50%;background:var(--brand);color:var(--on-brand);display:grid;place-items:center;font-weight:700;font-size:.85rem}
+.tips b{display:block}
+.qs{display:grid;gap:14px;max-width:720px}
+.again{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:14px;margin-top:28px;padding:16px;border:1.5px dashed var(--line);border-radius:10px}
+.again-btns{display:flex;gap:10px;flex-wrap:wrap}
+.confirm{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:12px 14px;margin-top:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;font-weight:600}
+.copied{font-size:.9rem;font-weight:600;color:var(--good)}
+.src{font-size:.82rem;color:var(--muted);margin-top:28px;max-width:80ch}
+.src a,.learn a{color:var(--crimson)}
+.learn{margin-top:18px;border-top:1px solid var(--line);padding-top:12px;font-size:.92rem;color:var(--muted)}
+.learn summary{cursor:pointer;font-weight:700;color:var(--fg)}
+.ifrow{display:grid;gap:6px;background:var(--surface);border:1.5px solid var(--crimson);border-radius:10px;padding:12px 14px}
+.ifrow b{font-size:.95rem}
+.ifrow .pre{font-weight:700;color:var(--crimson)}
+.count{font-size:.9rem;color:var(--muted);margin:6px 0}
+.meme{position:relative;background:#111;color:#fff;border-radius:12px;aspect-ratio:4/3;max-width:300px;width:100%;display:grid;grid-template-rows:auto 1fr auto;text-align:center;padding:10px 12px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.meme .mt,.meme .mb{font-family:Anton,Impact,"Arial Black",sans-serif;text-transform:uppercase;font-size:1.15rem;line-height:1.1;letter-spacing:.02em;text-shadow:2px 2px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000;overflow-wrap:anywhere}
+.meme .me{font-size:4.6rem;line-height:1;display:grid;place-items:center}
+.meme.sm{max-width:220px}.meme.sm .me{font-size:3.4rem}.meme.sm .mt,.meme.sm .mb{font-size:.95rem}
+.res-grid{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:center}
+@media (max-width:640px){.res-grid{grid-template-columns:minmax(0,1fr)}.res-grid .meme{max-width:260px}}
+.sit{display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--brand);color:var(--on-brand);border-radius:999px;padding:2px 10px;margin-bottom:6px}
+.front .fe{font-size:2.2rem;line-height:1}
+.outcome .oe{font-size:3rem;line-height:1;float:right;margin-left:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <div class="brand">Mission Map Check<small>Toppenish Wildcats · Test-drive your 10-year plan</small></div>
+    <div class="prog"><div class="prog-label" id="progLabel">Getting started</div><div class="bar"><i id="progBar"></i></div></div>
+    <div class="hdr-stats" id="hdrStats"></div>
+  </div>
+</header>
+<main><div class="wrap">
+  <section class="panel" id="panel" aria-live="polite"></section>
+  <aside class="side" id="side"></aside>
+</div></main>
+
+<script>
+/* ================= DATA ================= */
+const MINW = 17.13;                     // WA minimum wage 2026 (L&I)
+const MINW_YR = Math.round(MINW*2080);  // full-time year
+const WA_MED = 62990;                   // BLS OEWS May 2025, WA all-occupation median
+const RC_URL = "https://claude.ai/artifact/S1M4SzmvH36eMueHMr2AjH";
+
+/* Careers. Wages: BLS OEWS May 2025 annual medians (WA statewide, Yakima metro).
+   paths = roads that lead there, with years of training after high school. */
+const C = (id,t,g,wa,yak,edu,paths,gpa,comp,step,extra)=>Object.assign({id,t,g,wa,yak,edu,paths,gpa,comp,step},extra||{});
+const CAREERS = [
+ C("rn","Registered Nurse","Health",124200,102950,"A 2-year nursing degree (ADN) or a 4-year BSN, then the NCLEX license exam. Nursing programs are competitive.",{cc:3,univ:4},3.0,true,"Nursing Assistant (CNA)"),
+ C("cna","Nursing Assistant (CNA)","Health",49180,47080,"A state-approved CNA course (a few weeks to a few months) and a state exam.",{cert:.5,cc:.5,work:1},2.0,false,""),
+ C("ma","Medical Assistant","Health",59290,49310,"A medical assistant certificate, usually about a year.",{cert:1,cc:1},2.0,false,""),
+ C("dh","Dental Hygienist","Health",131160,120690,"A 2–3 year dental hygiene degree and a state license. Programs are competitive.",{cc:3,univ:4},3.2,true,"Dental Assistant"),
+ C("medic","Paramedic","Health",104310,null,"EMT certificate first, then about 1–2 years of paramedic training.",{cc:2,cert:2},2.5,false,"EMT"),
+ C("pa","Physician Assistant","Health",164360,136570,"A 4-year degree, hands-on patient care hours, then a 2–3 year PA master's program.",{univ:7},3.3,true,"Medical Assistant or CNA"),
+ C("dr","Doctor (Physician)","Health",null,null,"A 4-year degree, 4 years of medical school, then 3–7 years of residency.",{univ:11},3.6,true,"Medical scribe or CNA",{wageNote:"U.S. median is above $239,000 (BLS)",natWage:239200}),
+ C("pt","Physical Therapist","Health",105950,105950,"A 4-year degree, then a 3-year Doctor of Physical Therapy (DPT).",{univ:7},3.3,true,"Physical therapy aide"),
+ C("pharm","Pharmacist","Health",160610,146650,"At least 2 years of college classes, then a 4-year PharmD program.",{univ:6},3.3,true,"Pharmacy Technician"),
+ C("vet","Veterinarian","Health",160510,158180,"A 4-year degree, then 4 years of veterinary school.",{univ:8},3.5,true,"Veterinary Assistant"),
+ C("vt","Veterinary Technician","Health",59740,null,"A 2-year vet tech degree and a state credential.",{cc:2},2.5,false,"Veterinary Assistant"),
+ C("teach","Teacher (K–12)","Education & Community",102670,100560,"A 4-year degree plus a teaching certificate (often part of the degree).",{univ:4},3.0,false,"Paraeducator or tutor"),
+ C("couns","School Counselor","Education & Community",82670,96370,"A 4-year degree, then a 2-year master's in school counseling.",{univ:6},3.0,false,"Paraeducator"),
+ C("sw","Social Worker","Education & Community",74480,67650,"A 4-year social work degree (BSW). Many jobs want a master's (MSW).",{univ:4},2.8,false,"Social and human service assistant"),
+ C("police","Police Officer","Public Safety",102080,98340,"High school diploma (college helps), pass hiring tests and a background check, then academy training. Most departments hire at 21.",{work:3,cc:3,univ:4,mil:4},2.5,false,"Security guard or 911 dispatcher"),
+ C("fire","Firefighter","Public Safety",94520,62120,"EMT certificate (a fire science degree helps), pass hiring tests. Hiring is very competitive.",{cc:2,cert:1.5,mil:4},2.5,true,"EMT"),
+ C("elec","Electrician","Skilled Trades",95220,78630,"A 4–5 year paid apprenticeship (8,000 work hours) and a state license exam.",{appr:5,cert:5,mil:5},2.5,false,"Electrical trainee"),
+ C("line","Power Lineworker","Skilled Trades",133060,119850,"Lineworker school or pre-apprenticeship, then a 3–4 year paid apprenticeship.",{appr:4,cert:4},2.5,true,"Groundworker"),
+ C("plumb","Plumber","Skilled Trades",81030,60900,"A 4–5 year paid apprenticeship and a state certificate.",{appr:5},2.3,false,"Plumber trainee"),
+ C("carp","Carpenter","Skilled Trades",74190,63300,"A 4-year paid apprenticeship, or learn on the job.",{appr:4,work:4},2.0,false,"Construction laborer"),
+ C("hvac","HVAC Technician","Skilled Trades",75660,65900,"A 1–2 year HVAC program or a paid apprenticeship.",{cert:2,cc:2,appr:4},2.3,false,"HVAC helper"),
+ C("weld","Welder","Skilled Trades",63020,57450,"A welding certificate (about a year) and welding tests.",{cert:1,cc:1,appr:3},2.0,false,"Shop helper"),
+ C("diesel","Diesel Mechanic","Skilled Trades",77900,63990,"A 1–2 year diesel technology program.",{cert:2,cc:2,mil:4},2.0,false,"Lube or shop technician"),
+ C("auto","Auto Technician","Skilled Trades",57270,50150,"A 1–2 year automotive program, or learn on the job, plus ASE certifications.",{cert:2,cc:2,work:2},2.0,false,"Lube technician"),
+ C("heavy","Heavy Equipment Operator","Skilled Trades",81700,71810,"A paid apprenticeship of about 3 years, or learn on the job.",{appr:3,work:3},2.0,false,"Construction laborer"),
+ C("cdl","Truck Driver (CDL)","Skilled Trades",64760,57210,"A CDL training course (a few weeks) and license tests. You must be 21 to drive across state lines.",{cert:.5,work:.5},2.0,false,""),
+ C("acct","Accountant","Business",96550,82380,"A 4-year degree in accounting. A CPA license takes more classes and a test.",{univ:4},3.0,false,"Bookkeeping clerk"),
+ C("mkt","Marketing Specialist","Business",95120,64900,"A 4-year degree in marketing or business.",{univ:4},2.8,false,"Sales associate"),
+ C("hr","Human Resources Specialist","Business",84550,72180,"A 4-year degree in business or HR.",{univ:4},2.8,false,"HR assistant"),
+ C("re","Real Estate Agent","Business",79130,72520,"A 90-hour pre-license course, a state exam, then work under a broker. Pay is commission, so it goes up and down.",{cert:.5,work:.5},2.0,false,""),
+ C("biz","Small Business Owner","Business",null,null,"No degree required. Most owners work in their industry first and save money to start.",{work:4,cert:4,cc:4,univ:4,appr:4},2.0,false,"Working in your industry",{wageNote:"Income varies a lot. The game uses WA's median wage."}),
+ C("swdev","Software Developer","Tech & Media",166540,115170,"A 4-year degree in computer science, or a strong portfolio of projects.",{univ:4},3.0,false,"IT support or intern"),
+ C("game","Video Game Developer","Tech & Media",166540,115170,"A 4-year degree in computer science or game design, plus a portfolio of games you built. BLS counts most game developers as software developers.",{univ:4},3.0,false,"QA game tester"),
+ C("it","IT Support Specialist","Tech & Media",75220,66250,"An IT certificate or 2-year degree, plus certifications like CompTIA A+.",{cert:1,cc:2,mil:4},2.3,false,"Help desk"),
+ C("gd","Graphic Designer","Tech & Media",72710,57970,"A 2- or 4-year design degree and a strong portfolio.",{univ:4,cc:2},2.5,false,"Print shop or freelance"),
+ C("film","Video Producer","Tech & Media",81550,null,"A film or media degree helps, but your portfolio and experience matter most.",{univ:4,cc:2,work:4},2.5,false,"Production assistant"),
+ C("law","Lawyer","Law & Science",154130,131660,"A 4-year degree, 3 years of law school, then the bar exam.",{univ:7},3.5,true,"Legal assistant"),
+ C("paralegal","Paralegal","Law & Science",79400,63140,"A paralegal certificate or 2-year degree.",{cert:1,cc:2,univ:4},2.5,false,"Legal secretary"),
+ C("eng","Civil Engineer","Law & Science",110000,100510,"A 4-year engineering degree, then an engineering license later.",{univ:4},3.2,true,"Engineering technician"),
+ C("env","Environmental Scientist","Law & Science",98300,76560,"A 4-year degree in environmental science, biology or chemistry.",{univ:4},3.0,false,"Field technician"),
+ C("cos","Cosmetologist / Barber","Hands-On & Service",59510,46270,"About a year of cosmetology or barber school, then a state license.",{cert:1},2.0,false,"Salon assistant"),
+ C("chef","Chef","Hands-On & Service",76010,62920,"Work your way up in kitchens. Culinary school can speed it up.",{work:5,cert:4,cc:4},2.0,false,"Line cook"),
+ C("mil","Military Service Member","Hands-On & Service",null,null,"Enlist after high school and pass the ASVAB test. The military trains you for a specific job.",{mil:0},2.0,false,"",{wageNote:"Military pay plus housing and food. The game uses an estimate."}),
+];
+const CAR_GROUPS=["Health","Education & Community","Public Safety","Skilled Trades","Business","Tech & Media","Law & Science","Hands-On & Service"];
+const GROUP_TIP={
+ "Health":"Take health science and biology classes, keep science and math grades up, and look for CNA training or volunteer time at a clinic.",
+ "Education & Community":"Tutor, coach or help with kids' programs. Take classes that build writing and speaking.",
+ "Public Safety":"Stay out of trouble (background checks are strict), stay in shape, and ask whether there's a police Explorer or fire cadet program near you.",
+ "Skilled Trades":"Take shop, construction or auto CTE classes, keep passing math, and visit Perry Technical Institute in Yakima or ask about pre-apprenticeship programs.",
+ "Business":"Take business and marketing CTE classes, join DECA or FBLA, and get a job where you deal with customers or money.",
+ "Tech & Media":"Take computer science, video production or design classes, and build a portfolio of real projects.",
+ "Law & Science":"Take the hardest English, science and history classes you can handle, and read a lot.",
+ "Hands-On & Service":"Get a part-time job in the field and learn from people already doing the work."
+};
+const CUSTOM_EDU={
+ none:{l:"On-the-job training (no degree)",paths:{work:1,cert:1},gpa:2.0},
+ cert:{l:"A short certificate (1 year or less)",paths:{cert:1,cc:1},gpa:2.0},
+ assoc:{l:"A 2-year degree",paths:{cc:2,cert:2},gpa:2.5},
+ appr:{l:"A paid apprenticeship",paths:{appr:4},gpa:2.3},
+ bach:{l:"A 4-year degree",paths:{univ:4},gpa:2.8},
+ mast:{l:"A 4-year degree plus a master's",paths:{univ:6},gpa:3.0},
+ doct:{l:"8+ years (doctor, vet, professor)",paths:{univ:8},gpa:3.5}
+};
+
+const PATHS={
+ univ:{t:"4-year university",d:"Earn a bachelor's degree. Live in a dorm, an apartment or at home."},
+ cc:{t:"Yakima Valley College (2-year)",d:"Associate degrees and job programs. Many students transfer to a university after 2 years."},
+ cert:{t:"Technical school or certificate",d:"Short, hands-on programs like Perry Tech, beauty school, CDL or YVC certificates."},
+ appr:{t:"Paid apprenticeship",d:"Work for a paycheck while you learn a trade from a journey-level worker."},
+ mil:{t:"Military",d:"Serve, get trained and paid. The GI Bill can help pay for school after."},
+ work:{t:"Full-time job right away",d:"Start earning now and figure out training later."},
+ unsure:{t:"Not sure yet",d:"I haven't decided what I'll do after high school."}
+};
+/* tuition + fees per year */
+const SCHOOLS={
+ heritage:{t:"Heritage University (Toppenish)",tu:20928},
+ cwu:{t:"Central Washington University (Ellensburg)",tu:9966},
+ wa:{t:"Another public university in Washington",tu:10500},
+ oos:{t:"A college out of state",tu:29292}
+};
+const TU_CC=5312, TU_CERT=8000;
+const LIVE4={
+ home:{t:"At home with family",d:"About $300 a month to family, plus your phone, gas and personal costs.",yr:9600},
+ dorm:{t:"In a dorm on campus",d:"Room and food plan, plus personal costs.",yr:18780},
+ room:{t:"Apartment with roommates",d:"Split rent, food and bills.",yr:14000},
+ own:{t:"My own apartment",d:"All the rent and bills are yours.",yr:19500}
+};
+const PAY=[
+ ["fafsa","Fill out the FAFSA or WASFA","Unlocks the Washington College Grant and federal Pell Grant."],
+ ["schol","Apply for scholarships","Local, college and national scholarships."],
+ ["job","Work a part-time job","About 20 hours a week during school."],
+ ["family","Family helps","Family pitches in some money."],
+ ["loans","Student loans as backup","Borrowed money you pay back with interest."],
+ ["none","I haven't thought about it yet",""]
+];
+const LOCS10={
+ top:{t:"Toppenish / Lower Valley",r:1047,h:354990,yak:true},
+ yak:{t:"Yakima",r:1047,h:354990,yak:true},
+ tri:{t:"Tri-Cities",r:1268,h:439900},
+ ell:{t:"Ellensburg",r:1108,h:480000},
+ spo:{t:"Spokane",r:1193,h:420698},
+ sea:{t:"Seattle",r:2146,h:940000}
+};
+const LIVE10={
+ fam:{t:"Living with family",d:"Paying about $500 a month toward the house."},
+ rent:{t:"Renting my own place",d:"A one-bedroom apartment."},
+ own:{t:"Owning a home",d:"A median-priced house where I live."}
+};
+const KIDS={no:{t:"No kids yet",c:0},one:{t:"One child",c:1600},two:{t:"Two children",c:2900}};
+const SEVEN={
+ career:{t:"Working in my career",d:"Finished school or training and on the job."},
+ finishing:{t:"Finishing school or training",d:"Close to done with my degree, program or apprenticeship."},
+ both:{t:"Working while in school or training",d:"Paying my way as I go."},
+ working:{t:"Working, not in school",d:"Earning money at a job."}
+};
+const GPAS={"3.5":"3.5 or higher","3.0":"3.0 to 3.4","2.5":"2.5 to 2.9","2.0":"Just pass my classes (2.0)"};
+const ACTS=[
+ {id:"cte",t:"A CTE class connected to my career",fx:{skills:8}},
+ {id:"club",t:"A career club like FFA, DECA, FBLA, HOSA or SkillsUSA",fx:{skills:5,network:8}},
+ {id:"sport",t:"A sport, band, art or other activity",fx:{network:6,energy:3}},
+ {id:"job",t:"A part-time job",fx:{cash:1500,skills:4,energy:-5}},
+ {id:"vol",t:"Volunteering in my community",fx:{network:6,skills:3}},
+ {id:"shadow",t:"Job shadow or interview someone in my career",fx:{network:6,skills:4}}
+];
+const HABITS=[
+ {id:"hw",t:"Do homework or study 45 minutes every school night",gpa:.25,study:1},
+ {id:"grades",t:"Check my grades every week",gpa:.1,study:1},
+ {id:"ask",t:"Ask a teacher for help the same day I'm confused",gpa:.15,study:1},
+ {id:"phone",t:"Phone in another room while I study",gpa:.1,study:1},
+ {id:"read",t:"Read for 20 minutes a day",gpa:.05},
+ {id:"sleep",t:"Get 8 or more hours of sleep",gpa:.05,energy:10},
+ {id:"move",t:"Exercise or practice my sport",energy:10},
+ {id:"skill",t:"Practice a career skill for 20 minutes",skills:6},
+ {id:"save",t:"Save part of every dollar I get"}
+];
+const OBS={
+ grades:{t:"I start failing a class",ex:"I'll go to after-school help twice a week until it's a C."},
+ money:{t:"Money gets tight",ex:"I'll cut eating out and pick up extra hours."},
+ family:{t:"My family needs me at home",ex:"I'll tell my teachers and do homework at lunch."},
+ phone:{t:"Phone, games or social media eat my time",ex:"I'll leave my phone in the kitchen until homework is done."},
+ friends:{t:"Friends pull me off track",ex:"I'll tell them I'll meet up after I finish."},
+ health:{t:"I get hurt or sick",ex:"I'll email my teachers and make a catch-up plan."},
+ rejected:{t:"I don't get in on the first try",ex:"I'll ask what I need to fix and apply again."},
+ ride:{t:"I don't have a ride",ex:"I'll set up a carpool or check the bus times."},
+ motivation:{t:"I lose motivation",ex:"I'll reread my mission statement and talk to my mentor."},
+ stress:{t:"Stress piles up",ex:"I'll write a list, do the hardest thing first, and talk to someone."}
+};
+const CH_E=["🎒","📝","🎓","🏫","💼","🔑"];
+const CHAPTERS=[
+ {t:"Freshman year",yrs:"2026–27",age:"14–15"},
+ {t:"Sophomore & junior years",yrs:"2027–29",age:"15–17"},
+ {t:"Senior year",yrs:"2029–30",age:"17–18"},
+ {t:"Years 1–2 after high school",yrs:"2030–32",age:"18–20"},
+ {t:"Years 3–4 after high school",yrs:"2032–34",age:"20–22"},
+ {t:"Years 5–6 after high school",yrs:"2034–36",age:"22–24"}
+];
+
+/* ================= STATE ================= */
+const KEY="mission-map-check-v2";
+const FRESH=()=>({step:0,name:"",period:"",mission:"",career:"",cname:"",cedu:"",group:"",q:"",
+  loc:"",live10:"",kids:"",tenTxt:"",seven:"",sevenTxt:"",path:"",school:"",transfer:false,live4:"",pay:[],
+  gpaT:"",acts:[],habits:[],www:{what:"",how:"",when:"",where:""},ifs:{},ans:{},G:null});
+let S=FRESH();
+try{const s=JSON.parse(localStorage.getItem(KEY)||"null");if(s&&typeof s==="object")S=Object.assign(FRESH(),s)}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const money=n=>(n<0?"−$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US");
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const has=(arr,v)=>(arr||[]).includes(v);
+const yearOf=f=>2030+Math.ceil(f-1e-9);
+const ageOf=f=>18+Math.ceil(f-1e-9);
+
+function career(){
+  if(S.career==="custom"){const e=CUSTOM_EDU[S.cedu];if(!e||!S.cname.trim())return null;
+    return {id:"custom",t:S.cname.trim(),g:"",wa:null,yak:null,edu:"Needs "+e.l.toLowerCase()+".",paths:e.paths,gpa:e.gpa,comp:false,step:"Entry-level job in the field",custom:true}}
+  return CAREERS.find(c=>c.id===S.career)||null;
+}
+function localWage(c){
+  c=c||career();if(!c)return null;
+  const yakLoc=S.loc?!!(LOCS10[S.loc]||{}).yak:true;
+  if(yakLoc&&c.yak)return {w:c.yak,where:"Yakima area"};
+  if(c.wa)return {w:c.wa,where:"Washington"};
+  if(c.natWage)return {w:c.natWage,where:"U.S."};
+  return null;
+}
+function wageForSim(){const c=career();if(c&&c.id==="mil")return 45000;const lw=localWage(c);return lw?lw.w:WA_MED}
+
+/* taxes: 2026 federal single filer; WA has no income tax; FICA + WA PFML + WA Cares */
+function fedTax(G){const t=Math.max(0,G-16100);const b=[[12400,.10],[50400,.12],[105700,.22],[201775,.24],[256225,.32],[640600,.35],[Infinity,.37]];let prev=0,tax=0;for(const[cap,r]of b){if(t>prev)tax+=(Math.min(t,cap)-prev)*r;prev=cap}return tax}
+function takeHome(G){const ss=.062*Math.min(G,184500),med=.0145*G,pfml=.008072*Math.min(G,184500),cares=.0058*G;return G-fedTax(G)-ss-med-pfml-cares}
+function salaryNeeded(annual){let lo=0,hi=2e6;for(let i=0;i<70;i++){const m=(lo+hi)/2;if(takeHome(m)<annual)lo=m;else hi=m}return hi}
+function mortgage(price){const P=price*0.95,r=0.0625/12,n=360;return Math.round(P*r/(1-Math.pow(1+r,-n))+price*0.01/12+100)}
+const OTHER_MONTHLY=1610; // food 450, car+insurance+gas 650, utilities 250, phone 60, other 200
+function life10(){
+  const L=LOCS10[S.loc]||LOCS10.top;
+  const housing=S.live10==="fam"?500:S.live10==="own"?mortgage(L.h):L.r;
+  const kids=(KIDS[S.kids]||KIDS.no).c;
+  return {housing,other:OTHER_MONTHLY,kids,total:housing+OTHER_MONTHLY+kids};
+}
+
+/* ================= ROUTE LOGIC ================= */
+function bestKey(c){
+  const keys=Object.keys(c.paths).filter(k=>k!=="mil");
+  if(!keys.length)return "mil";
+  return keys.sort((a,b)=>c.paths[a]-c.paths[b])[0];
+}
+function kindOf(k){return k==="univ"||k==="cc"||k==="cert"?"school":k==="appr"?"appr":k==="work"?"work":"mil"}
+function route(){
+  const c=career(),p=S.path;
+  if(!c)return {ok:false,why:"nocareer"};
+  if(!p||p==="unsure")return {ok:false,why:"unsure",off:"pre-work"};
+  if(c.paths[p]!=null)return {ok:true,via:p,start:0,yrs:c.paths[p],kind:kindOf(p)};
+  if(p==="cc"&&c.paths.univ!=null)return S.transfer?{ok:true,via:"cc-transfer",start:0,yrs:c.paths.univ,kind:"school"}:{ok:false,why:"transfer",off:"off-school"};
+  if(p==="mil"){const k=bestKey(c);return {ok:true,via:"mil-gi",start:4,yrs:c.paths[k],kind:k==="appr"?"appr":k==="work"?"work":"gi",pre:"mil",altKey:k}}
+  if(p==="work")return {ok:false,why:"work",off:"pre-work"};
+  if(p==="appr")return {ok:false,why:"appr",off:"pre-work"};
+  return {ok:false,why:p==="univ"?"overshoot":"wrong",off:"off-school"};
+}
+const finishOf=R=>R.start+R.yrs;
+function routeLabel(R){
+  if(!R.ok)return "No road to this career yet";
+  const m={univ:"4-year university","cc":"Yakima Valley College","cc-transfer":"YVC, then transfer to a university",cert:"technical school",appr:"apprenticeship",work:"working your way in",mil:"military training","mil-gi":"military first, then GI Bill training"};
+  return m[R.via]||R.via;
+}
+
+/* ================= PLAN CHECK ================= */
+const WHEN_RX=/\d|mon|tue|wed|thu|fri|sat|sun|night|morning|after school|lunch|week|day/i;
+function wwwOk(){const w=S.www;return ["what","how","when","where"].every(k=>(w[k]||"").trim().length>=3)}
+function wwwSpecific(){return wwwOk()&&WHEN_RX.test(S.www.when)}
+function ifsDone(){return Object.keys(S.ifs).filter(k=>(S.ifs[k]||"").trim().length>=3)}
+function checks(){
+  const c=career(),R=route(),out=[];
+  const add=(k,label,st,msg,fix,go)=>out.push({k,label,st,msg,fix,go});
+  // 1 mission
+  const ms=S.mission.trim();
+  ms.length>=15?add("mission","Mission statement","ok","You wrote it down. That's your compass.","",1)
+    :add("mission","Mission statement","warn","Your mission statement is missing or very short.","Copy the 1–3 sentences from Step 1 of your handout.",1);
+  if(!c){add("route","Road to your career","bad","Pick a career first.","",1);return out}
+  // 2 route
+  const why={unsure:"You don't have an after-high-school plan yet, so there's no road to "+c.t+".",
+    transfer:c.t+" needs a 4-year degree. YVC alone gives you a 2-year degree.",
+    overshoot:"A university isn't the usual road to "+c.t+". It costs more and takes longer.",
+    wrong:"That road doesn't usually lead to "+c.t+".",
+    work:c.t+" needs training you can't get just by working.",
+    appr:c.t+" isn't learned through an apprenticeship."}[R.why];
+  const roads=Object.keys(c.paths).map(k=>PATHS[k].t.toLowerCase()).join(", ");
+  if(R.ok)add("route","Road to your career","ok",(R.via==="mil-gi"?"Military first, then the GI Bill can help pay for training as a "+c.t+". It works, it just adds time.":"Your 4-year goal ("+routeLabel(R)+") leads to "+c.t+"."),"",4);
+  else add("route","Road to your career","bad",why,"Roads that lead there: "+roads+(c.paths.univ!=null&&!c.paths.cc?", or YVC and then transfer":"")+".",4);
+  // 3 timeline
+  if(R.ok){
+    const f=finishOf(R);const s7=S.seven;let st="ok",msg,fix="";
+    const doneTxt="Training for "+c.t+" takes about "+fmtYrs(R.yrs)+(R.start?" after "+R.start+" years of service":"")+", so you'd finish around "+yearOf(f)+" (age "+ageOf(f)+").";
+    if(f>6){st="warn";msg=doneTxt+" That's after year 10.";fix="That's OK for a long career. Change your 10-year goal to where you'll be in training then (for example \"in "+(c.id==="dr"?"medical residency":"my last years of school")+"\").";}
+    else if(s7==="career"&&f>3.5){st="warn";msg=doneTxt+" Your 7-year goal says you'll be working in your career, but you'd still be training.";fix="Change your 7-year goal to \"finishing school or training\", or pick a faster road.";}
+    else if((s7==="finishing"||s7==="both")&&f<=2.5){st="warn";msg=doneTxt+" You could be done before year 7.";fix="Aim higher: make your 7-year goal \"working in my career\".";}
+    else if(s7==="working"&&!["work"].includes(R.via)&&f>3.5){st="warn";msg=doneTxt+" Your 7-year goal says you won't be in school.";fix="Make your 7-year goal match your training.";}
+    else msg=doneTxt+" Your 7-year and 10-year goals line up with that.";
+    add("time","Timeline adds up",st,msg,fix,3);
+  } else add("time","Timeline adds up","bad","Without a road there's no timeline yet.","Fix your 4-year goal first.",4);
+  // 4 grades
+  const T=parseFloat(S.gpaT);
+  if(!S.gpaT)add("gpa","Grades match the goal","bad","You didn't set a GPA goal.","",5);
+  else if(T>=c.gpa)add("gpa","Grades match the goal","ok","Your goal ("+GPAS[S.gpaT]+") meets what "+c.t+" programs usually look for ("+c.gpa.toFixed(1)+"+).","",5);
+  else add("gpa","Grades match the goal",T>=c.gpa-.5?"warn":"bad","Your goal ("+GPAS[S.gpaT]+") is below the "+c.gpa.toFixed(1)+"+ that "+(c.comp?"competitive ":"")+"programs for "+c.t+" usually look for.","Raise your 1-year GPA goal and add study habits to your daily goals.",5);
+  // 5 money
+  const school=R.ok?R.kind==="school":["univ","cc","cert"].includes(S.path);
+  if(!S.pay.length||has(S.pay,"none"))add("money","Money plan","bad","You don't have a plan to pay for life after high school.","Add FAFSA/WASFA, scholarships or a part-time job to your 4-year goal.",4);
+  else if(school&&!has(S.pay,"fafsa"))add("money","Money plan","warn","No FAFSA or WASFA. That's how you get Washington College Grant money, and about half of Washington families qualify for some.","Add \"Fill out the FAFSA or WASFA\" to your 4-year goal.",4);
+  else add("money","Money plan","ok","You have a plan to pay your way.","",4);
+  // 6 experience
+  const rel=S.acts.filter(a=>["cte","club","shadow","job","vol"].includes(a)).length;
+  rel>=2?add("exp","Experience starts now","ok","You'll build real experience in high school.","",5)
+   :add("exp","Experience starts now",rel===1?"warn":"bad",rel?"One activity is a start.":"No career-related activities this year.",GROUP_TIP[c.g]||"Add a CTE class, a career club or a job shadow to your 1-year goal.",5);
+  // 7 habits
+  const study=S.habits.filter(h=>HABITS.find(x=>x.id===h&&x.study)).length;
+  if(S.habits.length>=3&&study>=2)add("habits","Daily habits","ok","Your daily goals give your GPA goal a real chance.","",6);
+  else add("habits","Daily habits",S.habits.length>=2?"warn":"bad","Big goals are built from daily habits. You have "+S.habits.length+" daily goal"+(S.habits.length===1?"":"s")+" and "+study+" study habit"+(study===1?"":"s")+".","Pick at least 3 daily goals, including 2 study habits.",6);
+  // 8 WWWW
+  if(wwwSpecific())add("www","WHAT, HOW, WHEN, WHERE","ok","Your monthly goal is specific.","",6);
+  else if(wwwOk())add("www","WHAT, HOW, WHEN, WHERE","warn","All four boxes are filled, but WHEN is vague.","Use a day and time, like \"Mon–Thu, 6:00–6:45 pm\".",6);
+  else add("www","WHAT, HOW, WHEN, WHERE","bad","Some of the four boxes are empty.","Fill in all four from Step 3 of your handout.",6);
+  // 9 if-then
+  const n=ifsDone().length;
+  add("ifs","If…Then plans",n>=3?"ok":n?"warn":"bad",n>=3?"You have 3 backup plans ready.":"You have "+n+" of 3 If…Then plans.",n>=3?"":"Add If…Then plans until you have 3.",7);
+  // 10 lifestyle
+  const L=life10(),need=salaryNeeded(L.total*12),lw=localWage(c);
+  if(!S.loc||!S.live10)add("life","Can you afford your 10-year life?","bad","Pick where and how you want to live.","",2);
+  else if(!lw)add("life","Can you afford your 10-year life?","warn","Pay for this career varies a lot. Your lifestyle needs about "+money(need)+" a year.","Look up real pay in WA Reality Check.",2);
+  else{const r=lw.w/need;
+    add("life","Can you afford your 10-year life?",r>=1?"ok":r>=.85?"warn":"bad",
+     "Your 10-year life in "+LOCS10[S.loc].t+" costs about "+money(L.total)+"/month, so you'd need about "+money(need)+" a year. Half of "+c.t+"s in the "+lw.where+" earn "+money(lw.w)+" or more.",
+     r>=1?"":"Pick a cheaper place to live, live with roommates or family longer, or choose a higher-paying career.",2)}
+  return out;
+}
+function fmtYrs(y){return y<1?"less than a year":(Number.isInteger(y)?y:y.toFixed(1))+" year"+(y===1?"":"s")}
+function scoreOf(cs){return cs.reduce((a,c)=>a+(c.st==="ok"?10:c.st==="warn"?5:0),0)}
+
+/* ================= GAME ENGINE ================= */
+function newGame(){
+  let gpa=2.4;
+  S.habits.forEach(h=>{const x=HABITS.find(a=>a.id===h);if(x&&x.gpa)gpa+=x.gpa});
+  if(wwwSpecific())gpa+=.1;
+  gpa+=((parseFloat(S.gpaT)||2.5)-2.5)*.25;
+  const R=route();
+  S.G={gpa:clamp(gpa,0,4),skills:10,network:10,energy:60+(has(S.habits,"sleep")?10:0)+(has(S.habits,"move")?10:0),
+    cash:0,debt:0,borrowed:0,delay:0,R,fafsa:has(S.pay,"fafsa"),early:false,rs:false,wildcat:false,wageMult:1,
+    ch:0,picks:{},cards:{},log:[],misses:[],used:[],crunch:0,recap:{},hsGpa:null,autoDone:{},carNote:""};
+  S.G.energy=clamp(S.G.energy,0,100);
+}
+function statusAt(y){
+  const G=S.G,R=G.R;
+  if(!R.ok)return R.off||"pre-work";
+  if(y-1<R.start)return R.pre||"pre-work";
+  const tEnd=R.start+R.yrs+G.delay;
+  return (y-.5<tEnd)?"train":"career";
+}
+function curFinish(){const R=S.G.R;return R.ok?R.start+R.yrs+S.G.delay:Infinity}
+function tuitionAt(y){
+  const R=S.G.R;
+  if(R.kind==="gi")return 0;
+  if(R.via==="univ")return (SCHOOLS[S.school]||SCHOOLS.cwu).tu;
+  if(R.via==="cc")return TU_CC;
+  if(R.via==="cc-transfer")return (y-R.start)<=2?TU_CC:SCHOOLS.cwu.tu;
+  if(R.via==="cert")return TU_CERT;
+  if(R.via==="fix"){return R.fixKey==="univ"?SCHOOLS.cwu.tu:R.fixKey==="cc"?TU_CC:R.fixKey==="cert"?TU_CERT:0}
+  return 0;
+}
+function offTuition(){return S.path==="univ"?(SCHOOLS[S.school]||SCHOOLS.cwu).tu:S.path==="cc"?TU_CC:S.path==="cert"?TU_CERT:0}
+function live4Yr(inSchool){const l=LIVE4[S.live4]||LIVE4.home;if(S.live4==="dorm"&&!inSchool)return LIVE4.room.yr;return l.yr}
+
+function spend(amount,why){ // pay a cost; returns note
+  const G=S.G;
+  if(G.cash>=amount){G.cash-=amount;return ""}
+  const rem=amount-G.cash;G.cash=0;
+  if(has(S.pay,"loans")){G.debt+=rem;G.borrowed+=rem;return "borrowed "+money(rem)}
+  return "short "+money(rem);
+}
+function simYear(y){
+  const G=S.G,R=G.R,st=statusAt(y),pay=S.pay;
+  let inc=0,aid=0,tu=0,live=0;
+  if(st==="career"){inc=takeHome(wageForSim()*.85*G.wageMult);live=life10().total*12}
+  else if(st==="train"){
+    const k=R.kind;
+    if(k==="school"||k==="gi"){
+      tu=tuitionAt(y);
+      if(R.pt){inc=takeHome(MINW_YR*.6);tu=tu*.6}
+      else if(has(pay,"job"))inc+=takeHome(15000);
+      if(has(pay,"family"))inc+=3000;
+      if(k==="gi")inc+=12000;
+      if(G.fafsa&&k!=="gi")aid+=tu+3000;
+      if(has(pay,"schol"))aid+=(G.gpa>=3?2000:800)*(G.early?1:.5);
+      if(G.wildcat&&y<=4)aid+=5000;
+      live=live4Yr(true);
+    } else if(k==="appr"){inc=takeHome(wageForSim()*.6);live=live4Yr(false)}
+    else if(k==="work"){inc=takeHome(MINW_YR);live=live4Yr(false)}
+    else {inc=24000;live=3000}
+  } else if(st==="mil"){inc=24000;live=3000}
+  else if(st==="off-school"){
+    tu=offTuition();if(has(pay,"job"))inc+=takeHome(15000);if(has(pay,"family"))inc+=3000;
+    if(G.fafsa)aid+=tu+3000;live=live4Yr(true);
+  } else {inc=takeHome(MINW_YR);live=live4Yr(false)}
+  let net=inc+aid-tu-live,note="";
+  if(st==="career"&&G.debt>0){const p=Math.min(G.debt,Math.max(2400,G.debt*.12));net-=p;G.debt-=p}
+  if(net>=0)G.cash+=Math.round(net*(has(S.habits,"save")?.5:.3));
+  else{note=spend(-net);if(note.startsWith("short"))return {st,inc,aid,tu,live,net,short:-net}}
+  return {st,inc,aid,tu,live,net};
+}
+function simChapter(ch){ // post-HS chapters 3,4,5 -> years 1-2,3-4,5-6
+  const G=S.G;G.simDone=G.simDone||{};if(G.simDone[ch])return;G.simDone[ch]=1;
+  const ys=[ch*2-5,ch*2-4];let r={inc:0,aid:0,tu:0,live:0,short:0,st:[]};
+  ys.forEach(y=>{const o=simYear(y);r.inc+=o.inc;r.aid+=o.aid;r.tu+=o.tu;r.live+=o.live;r.st.push(o.st);if(o.short)r.short+=o.short});
+  if(r.short>0){
+    G.crunch++;G.debt+=Math.round(r.short*.3);G.energy=clamp(G.energy-10,0,100);
+    if(G.R.ok&&r.st.includes("train")){G.delay+=.5;G.log.push({ch:ch+1,t:"Money ran out. You dropped to part-time for a semester, and some bills went on a credit card."})}
+    else G.log.push({ch:ch+1,t:"Money ran out. Some bills went on a credit card."});
+  }
+  if(G.energy<25&&G.R.ok&&r.st.includes("train")){G.delay+=.5;G.energy=40;G.log.push({ch:ch+1,t:"You burned out and took a semester off to reset."})}
+  G.energy=clamp(G.energy+8,0,100);
+  G.recap[ch]=r;
+}
+function fx(eff,shield){ // apply effects; returns list of delta chips
+  const G=S.G,out=[];
+  for(const k in eff){
+    let v=eff[k];if(!v)continue;
+    if(shield&&v<0)v=k==="delay"?0:(k==="gpa"?Math.round(v/2*100)/100:Math.round(v/2));
+    if(shield&&k==="delay")v=0;
+    if(!v)continue;
+    if(k==="gpa"){G.gpa=clamp(G.gpa+v,0,4);out.push([v>0,"GPA "+(v>0?"+":"−")+Math.abs(v).toFixed(2)])}
+    else if(k==="cash"){if(v>0){G.cash+=v}else{G.cash+=v;if(G.cash<0&&G.ch<3)G.cash=0;if(G.cash<0){G.debt+=-G.cash;out.push([false,"Debt +"+money(-G.cash)]);G.cash=0}}out.push([v>0,(v>0?"+":"−")+money(Math.abs(v)).replace("−","")])}
+    else if(k==="debt"){G.debt+=v;out.push([v<0,"Debt "+(v>0?"+":"−")+money(Math.abs(v))])}
+    else if(k==="delay"){if(G.R.ok){G.delay=Math.max(0,G.delay+v);out.push([v<0,(v>0?"+":"−")+fmtYrs(Math.abs(v))+" to finish"])}}
+    else if(k==="wage"){G.wageMult*=v;out.push([true,"Pay +"+Math.round((v-1)*100)+"%"])}
+    else{G[k]=clamp(G[k]+v,0,100);const n={skills:"Skills",network:"Network",energy:"Energy"}[k];out.push([v>0,n+" "+(v>0?"+":"−")+Math.abs(v)])}
+  }
+  return out;
+}
+const chips=a=>'<div class="deltas">'+a.map(([up,t])=>'<span class="d '+(up?"up":"dn")+'">'+esc(t)+"</span>").join("")+"</div>";
+
+/* chapter auto effects (activities, habits) */
+function chapterStart(ch){
+  const G=S.G;if(G.autoDone[ch])return;G.autoDone[ch]=1;
+  if(ch<3){
+    S.acts.forEach(a=>{const x=ACTS.find(z=>z.id===a);if(x)fx(x.fx)});
+    if(has(S.habits,"skill"))fx({skills:6});
+    if(has(S.habits,"save"))G.cash+=300;
+    if(S.acts.length>3)fx({energy:-8});
+    if(ch>0)G.energy=clamp(G.energy+8,0,100);
+  }
+  if(ch===3)highSchoolEnd();
+  if(ch>=3&&has(S.habits,"skill"))fx({skills:4});
+}
+function lateGate(c){const G=S.G;if(G.hsGpa!=null&&G.hsGpa<c.gpa&&G.R.kind==="school"){G.delay+=.5;G.log.push({ch:5,t:"Your high school GPA was below what "+c.t+" programs look for, so you took a semester of classes at YVC first."})}}
+function highSchoolEnd(){
+  const G=S.G,c=career(),R=G.R;G.hsGpa=G.gpa;
+  if(G.gpa<2.0){G.log.push({ch:3,t:"You were short on credits and needed summer school to graduate."});if(R.ok)G.delay+=.25}
+  if(R.ok&&R.kind==="school"&&G.rs){const cut=R.via==="cert"?.5:1;R.yrs=Math.max(.5,R.yrs-cut);G.log.push({ch:3,t:"Running Start credits cut about "+fmtYrs(cut)+" off your training."})}
+  if(R.ok&&c&&G.gpa<c.gpa){
+    const d=(c.comp&&G.gpa<c.gpa-.4)?1:.5;G.delay+=d;
+    G.log.push({ch:3,t:"Your GPA ("+G.gpa.toFixed(2)+") was below the "+c.gpa.toFixed(1)+" that "+c.t+" programs look for. You spent "+fmtYrs(d)+" retaking classes and reapplying."});
+  }
+  if(R.ok&&R.via==="univ"&&S.school==="cwu"&&G.fafsa&&G.early&&G.gpa>=3&&S.live4==="dorm"){G.wildcat=true;G.log.push({ch:3,t:"You earned CWU's Wildcat Promise scholarship ($5,000 a year) for Toppenish students with full financial need."})}
+}
+
+/* ---------- choices ---------- */
+/* Each chapter has 2 decisions (A and B) plus a Life Happens card. m = [emoji, top text, bottom text] meme. */
+const O=(l,d,m,run)=>({l,d,m,run});
+function choiceA(ch){
+  const G=S.G,c=career(),R=G.R,ct=c?c.t:"your career";
+  if(ch===0)return {title:"The D in Algebra",story:"<p>First semester grades just posted. You have a <b>D in Algebra 1</b>. Math shows up in almost every career, including "+esc(ct)+".</p>",
+   opts:[O("Go to after-school help twice a week","Costs you some free time.",["📈","Me after 2 weeks of tutoring","Algebra who? We're friends now"],()=>({fx:{gpa:.2,energy:-5},t:"Your Algebra grade climbs to a B-. You also figure out how your teacher writes tests."})),
+         O("Ask a friend who gets it to study with you on weekends","Fun and helpful, if you actually study.",["🤝","Weekend study group","40% studying, 60% snacks"],()=>({fx:{gpa:.1,network:5},t:"You pull it up to a C+. Your friend is now your study partner for the year."})),
+         O("Wait and fix it next semester","It's only one grade, right?",["🫠","Me: I'll fix it next semester","Next semester me:"],()=>({fx:{gpa:-.2},t:"The D turns into an F. You'll have to make up the credit."}))]};
+  if(ch===1){
+    const school=R.ok?R.kind==="school":["univ","cc","cert"].includes(S.path);
+    return {title:"Junior year: how will you use it?",story:"<p>Your counselor says junior and senior year are when your plan starts paying off. You can only fit one big thing.</p><p><b>Running Start</b> lets Washington juniors and seniors take college classes tuition-free at places like Yakima Valley College.</p>",
+     opts:[O("Do Running Start at YVC","Earn college credit for free. Harder classes, and you need a ride to Yakima.",["🏃","Running Start kids","Taking college classes at 16 like it's nothing"],()=>{
+              if(G.gpa<2.7)return {fx:{gpa:.05,energy:-5},t:"Your placement scores weren't ready for college-level English yet, so you take a prep class first. You'll try again next year."};
+              G.rs=true;return {fx:{energy:-12,skills:5},t:school?"You earn college credits for free. That can shave time off your training.":"You earn college credits for free. They don't count toward "+ct+" training, but they're on your transcript."}}),
+           O("Take a CTE class and join a career club for "+ct,"Hands-on skills and people who can vouch for you.",["🛠️","Me in CTE","Actually learning stuff I'll use"],()=>({fx:{skills:15,network:10},t:"You learn real skills and meet adults who work in the field."})),
+           O("Get a part-time job","Money now. Less time for homework.",["💸","My first paycheck","Who is FICA and why did he take my money"],()=>({fx:{cash:3000,skills:5,energy:-10,gpa:-.1},t:"You save about $3,000, and you learn how to show up on time every shift."}))]};
+  }
+  if(ch===2){
+    const k=R.ok?R.kind:S.path;
+    if(k==="school"||k==="gi"||["univ","cc","cert"].includes(S.path))return {title:"October: FAFSA season",story:"<p>The FAFSA and WASFA open in the fall of senior year. Filling one out is how you get the Washington College Grant and the Pell Grant. Many colleges give their best scholarships to early filers.</p>"+(has(S.pay,"fafsa")?"<p>Your plan says you'll fill it out. Will you follow through?</p>":"<p>Your plan doesn't mention it.</p>"),
+     opts:[O("Sit down with family in October and finish it, then apply for 5 scholarships","A few hours of paperwork.",["📝","FAFSA done in October","Future me sending thank-you notes"],()=>{G.fafsa=true;G.early=true;return {fx:{energy:-5,network:5},t:"Done early. You'll see your aid offer before you commit to a school."}}),
+           O("Do it in the spring","You'll get there eventually.",["⏰","Me in March","Where did all the scholarships go?"],()=>{G.fafsa=true;G.early=false;return {fx:{},t:"You still get state and federal grants, but early-deadline scholarships are gone."}}),
+           O("Skip it. You'll figure out money later","No forms, no stress. For now.",["🙈","Skipping the FAFSA","Leaving free money on the table"],()=>{G.fafsa=false;G.early=false;return {fx:{},t:"No FAFSA means no Washington College Grant and no Pell Grant."}})]};
+    if(k==="appr")return {title:"Getting into an apprenticeship",story:"<p>Apprenticeships take applications, aptitude tests and interviews. Spots fill up.</p>",
+     opts:[O("Finish a pre-apprenticeship class and apply to 3 programs","More work now.",["🔧","Applied to 3 programs","Options on options"],()=>{G.early=true;return {fx:{skills:10,network:10,energy:-5},t:"You get two interviews and an offer."}}),
+           O("Apply to the one program you know about","Fingers crossed.",["🤞","One application","And a whole lot of hope"],()=>({fx:{network:3},t:"You're on a waiting list."})),
+           O("Wait until after graduation","Enjoy senior year.",["😴","Waiting till after graduation","Applications: closed"],()=>({fx:{delay:.5},t:"Applications for this year already closed. You'll start later."}))]};
+    if(k==="mil")return {title:"Getting ready to enlist",story:"<p>Your recruiter says your ASVAB score decides which military jobs you can get.</p>",
+     opts:[O("Study for the ASVAB for 6 weeks","Practice tests every week.",["🎯","Studied for the ASVAB","Picked my job, not the leftovers"],()=>({fx:{skills:10},t:"Your score qualifies you for a technical job you actually want."})),
+           O("Take it cold","How hard can it be?",["🎲","Took the ASVAB cold","Got the job nobody wanted"],()=>({fx:{skills:-5},t:"Your score is OK, but your job choices are limited."})),
+           O("Get in shape first and study a little","Basic training is no joke.",["💪","Me showing up to basic","Already did the push-ups"],()=>({fx:{energy:10,skills:5},t:"You show up to basic ready."}))]};
+    return {title:"Senior year: what's next?",story:"<p>Graduation is coming. Your plan right after high school is: <b>"+esc((PATHS[S.path]||PATHS.unsure).t)+"</b>.</p>",
+     opts:[O("Meet with your counselor and apply to YVC as a backup","Keep doors open.",["🗂️","Me with a Plan B","Main character with a backup plan"],()=>{G.backup=true;G.fafsa=true;return {fx:{network:5},t:"You have an acceptance letter in your pocket, just in case."}}),
+           O("Line up a full-time job for after graduation","Money starts in June.",["💼","Day 1 after graduation","Already clocked in"],()=>({fx:{cash:1500},t:"You'll start right after graduation."})),
+           O("Figure it out after graduation","Summer first.",["🏖️","September","Everyone left. Me: wait, guys?"],()=>({fx:{energy:5},t:"You enjoy the summer. In September everyone else is gone."}))]};
+  }
+  const y=ch*2-5,st=statusAt(y);
+  if(ch===3){
+    if(st==="train"&&(R.kind==="school"||R.kind==="gi")||st==="off-school")return {title:"Your first quarter on your own",story:"<p>15 credits, new friends, and nobody telling you to do homework.</p>",
+     opts:[O("Make a weekly schedule and use the tutoring center","Boring, but it works.",["📅","My Google Calendar","Running my whole life now"],()=>({fx:{gpa:.1,energy:-5},t:"You finish your first year in good standing."})),
+           O("Work extra hours for spending money","Cash now, tired later.",["😵","Worked 30 hours a week","Slept through lecture"],()=>({fx:{cash:4000,energy:-15},t:"Your bank account looks good. Your grades slip a little."})),
+           O("Go out most nights","You only live once.",["🎉","Went out every night","My transcript took that personally"],()=>({fx:{network:10,energy:-15,gpa:-.4,delay:.5},t:"You fail two classes and have to retake them."}))]};
+    if(st==="mil"||R.kind==="mil")return {title:"Your first years in the military",story:"<p>Basic training is done. You have some free time and some benefits most people don't use.</p>",
+     opts:[O("Sign up for an extra training school","More skills, more rank.",["🎖️","Extra training","Stacking certifications"],()=>({fx:{skills:20},t:"You earn a certification that counts in civilian jobs too."})),
+           O("Take a free online college class with Tuition Assistance","Get a head start.",["💻","Free college class","While getting paid? Say less"],()=>({fx:{skills:10,delay:R.via==="mil-gi"?-.5:0},t:"You knock out some college credits while you serve."})),
+           O("Spend downtime gaming and relaxing","You earned it.",["🎮","Gaming every night","Four years later: wait, it's over?"],()=>({fx:{energy:10},t:"You're rested, but four years go fast."}))]};
+    if(st==="pre-work")return {title:"Working full-time",story:"<p>You're working full-time for about $"+MINW+" an hour. It pays the bills, but it isn't the road to "+esc(ct)+".</p>",
+     opts:[O("Ask your manager about training or a promotion","Show you want more.",["📈","Asked for more responsibility","Shift lead era"],()=>({fx:{skills:10,cash:2000},t:"You become a shift lead and earn a little more."})),
+           O("Job shadow someone who does "+ct+" work","See what it really takes.",["👀","Job shadow day","Oh, so THAT'S what the job is"],()=>{G.shadowed=true;return {fx:{network:10},t:"You find out exactly what training you need."}}),
+           O("Buy a new truck with payments","$650 a month for 6 years.",["🛻","New truck","Bank account: 💀"],()=>({fx:{cash:-15600,debt:24000,energy:5},t:"It's a great truck. The payment eats most of what you save."}))]};
+    return {title:"On the job",story:"<p>"+(R.kind==="appr"?"You're an apprentice now, earning while you learn.":"You're working and learning on the job.")+" Your boss offers overtime every Saturday.</p>",
+     opts:[O("Take some overtime and save it","A balance.",["💰","Some overtime","Emergency fund: built"],()=>({fx:{cash:5000,energy:-10},t:"You build a real emergency fund."})),
+           O("Take every shift you can","Max money.",["😩","Took every shift","Money ✅ Sleep ❌"],()=>({fx:{cash:9000,energy:-25},t:"Lots of money, very little sleep."})),
+           O("Skip overtime and take a night class in your trade","Invest in skills.",["🧠","Night class","Learning faster than everybody"],()=>({fx:{skills:15,network:5},t:"You learn faster than the other apprentices."}))]};
+  }
+  if(ch===4){
+    if(!R.ok||st==="pre-work"||st==="off-school"){
+      const k=c?bestKey(c):"cc";
+      return {title:"Is "+ct+" still the goal?",story:"<p>You're about 20. You're "+(st==="off-school"?"in school, but not on the road to "+esc(ct):"working, but not training for "+esc(ct))+". It's not too late. Lots of people start at 20.</p><p>The fastest road there is <b>"+esc((PATHS[k]||PATHS.cc).t)+"</b>"+(c?" ("+fmtYrs(c.paths[k])+")":"")+".</p>",
+       opts:[O("Enroll full-time now","Go all in.",["🚀","Enrolled at 20","It's not too late. It never was"],()=>{G.R={ok:true,via:"fix",fixKey:k,start:2,yrs:c.paths[k],kind:kindOf(k)};G.fafsa=true;lateGate(c);return {fx:{energy:-5},t:"You start training for "+ct+". You'll finish around "+yearOf(2+c.paths[k])+"."}}),
+             O("Keep working and start part-time","Slower, but you keep your paycheck.",["🐢","Part-time student","Slow and steady still counts"],()=>{G.R={ok:true,via:"fix",fixKey:k,start:2,yrs:c.paths[k]*1.6,kind:kindOf(k),pt:kindOf(k)==="school"};G.fafsa=true;lateGate(c);return {fx:{energy:-10},t:"You start part-time. It'll take longer: about "+fmtYrs(c.paths[k]*1.6)+"."}}),
+             O("Stay where you are. Maybe someday","No changes.",["🔁","Me: I'll start someday","Someday: still loading..."],()=>({fx:{},t:"Another two years go by."}))]};
+    }
+    if(R.kind==="mil"&&(st==="train"||st==="career"))return {title:"Making rank",story:"<p>You know your job now. Your sergeant says there's room to move up.</p>",
+     opts:[O("Study for the promotion board","Nights with the manual.",["⭐","Promotion board","Leveled up"],()=>({fx:{skills:10,network:10,energy:-5},t:"You make rank and lead a small team."})),
+           O("Earn a civilian certification through the military","It counts after you get out too.",["📜","Civilian certification","Ready for life after"],()=>({fx:{skills:15,wage:1.05},t:"You add a certification that civilian employers recognize."})),
+           O("Do your job and coast","Steady.",["😐","Coasting","Nothing happened. Literally nothing"],()=>({fx:{energy:10},t:"Nothing changes, good or bad."}))]};
+    if(st==="mil")return {title:"Your enlistment ends soon",story:"<p>Your 4 years are almost up. The GI Bill can help pay for school or training now.</p>",
+     opts:[O("Get out and use the GI Bill for "+ct+" training","Stick to the plan.",["🎓","GI Bill","Uncle Sam paying for school"],()=>({fx:{network:5},t:"You line up training to start when you get out."})),
+           O("Re-enlist for 4 more years","Steady pay and a bonus.",["🔂","Re-enlisted","Plan: delayed 4 years"],()=>{G.R.start+=4;return {fx:{cash:8000},t:"Good money, but "+ct+" training moves 4 years later."}}),
+           O("Get a civilian job and train part-time","Keep earning.",["⚖️","Job plus school","The balancing act"],()=>{G.R.yrs*=1.5;G.R.pt=G.R.kind==="gi";return {fx:{cash:4000},t:"You'll keep a paycheck, but training takes longer."}})]};
+    if(st==="train")return {title:"Summer opportunity",story:"<p>You're getting close. A "+(R.kind==="appr"?"contractor":"local employer")+" offers an <b>unpaid internship</b> in your field. A warehouse is hiring at $21 an hour.</p>",
+     opts:[O("Take the internship","Experience over money.",["🧑‍💼","Unpaid internship","Got a job lead instead of a paycheck"],()=>({fx:{skills:20,network:15,cash:-3000},t:"Your supervisor says to call when you finish. That's a job lead."})),
+           O("Take the paying job","Money over experience.",["💵","Warehouse job","Bank account: happy. Résumé: same"],()=>({fx:{cash:5000},t:"You save money for next year."})),
+           O("Do both","Mornings and nights.",["🥱","Did both","Sleep is a myth"],()=>({fx:{skills:15,network:10,cash:2500,energy:-25},t:"You get both, and you're exhausted."}))]};
+    return {title:"Moving up",story:"<p>You're working as "+art(ct)+" "+esc(ct)+". A coworker says an extra certification could get you a raise.</p>",
+     opts:[O("Earn the certification","Night classes for a few months.",["📜","New certification","Pay: up"],()=>({fx:{skills:15,wage:1.08,energy:-10},t:"You pass, and your pay goes up."})),
+           O("Apply at a bigger employer","New place, more pay.",["🏢","New job","New badge, bigger check"],()=>({fx:{wage:1.05,network:-5},t:"You start over with new coworkers, but the pay is better."})),
+           O("Stay put and enjoy it","You worked hard to get here.",["😌","Stayed put","Comfortable era"],()=>({fx:{energy:10},t:"Life is comfortable."}))]};
+  }
+  return {title:"New ride?",story:"<p>Your old car is making a noise. Your friend just bought a new lifted truck, and the dealership is offering you the same deal.</p>",
+   opts:[O("New truck: $900 a month for 6 years","It's beautiful.",["🛻","Me and my $900/month truck","Can't afford gas for it"],()=>({fx:{cash:-21600,debt:32000,energy:5},t:"You love it. That payment is bigger than some people's rent."})),
+         O("Reliable used car for $12,000","Not fancy.",["🚗","My used car","Not cute. Paid off"],()=>({fx:{cash:-12000},t:"It runs great and you own it."})),
+         O("Fix your car for $900 and save $300 a month","Make it last.",["🔧","Fixed the old car","Savings account doing push-ups"],()=>({fx:{cash:6300},t:"Two years later you have an extra $7,200 saved."}))]};
+}
+function choiceB(ch){
+  const G=S.G,c=career(),R=G.R,ct=c?c.t:"your career";
+  if(ch===0)return {title:"Group project ghosting",story:"<p>Your group project is due Friday. It's Wednesday. Two of your three partners haven't done anything, and they're leaving you on read.</p>",
+   opts:[O("Do the whole thing yourself tonight","You'll get it done. You'll also be up until 1 a.m.",["😤","Me doing the whole group project","My groupmates:  🧍🧍"],()=>({fx:{gpa:.05,energy:-12},t:"You turn in a solid project. You're wiped out, and your partners get the same grade you do."})),
+         O("Send the group a task list with deadlines, and tell your teacher what's going on","Act like the project manager.",["📋","Assigned everyone a task","Project manager era"],()=>({fx:{gpa:.1,network:5,skills:3},t:"Two partners finally come through. Your teacher notices how you handled it."})),
+         O("Do only your part and let the rest fall apart","Not your problem.",["🫠","When the group grade","Is also YOUR grade"],()=>({fx:{gpa:-.15},t:"The project gets a D. Your part was fine. The grade isn't."}))]};
+  if(ch===1)return {title:"Picking next year's classes",story:"<p>Registration is due tomorrow. Your friends are all signing up for the same easy elective. There's also a class that connects to "+esc(ct)+".</p>",
+   opts:[O("Take the class that connects to your career","Harder, but it's on the map.",["🎯","Picking classes for my future","Not for my friends"],()=>({fx:{skills:8,gpa:-.05},t:"It's harder, but now you know if you actually like this field."})),
+         O("Take the easy class with your friends","Easy A.",["😎","Easy A","Zero progress on the mission"],()=>({fx:{gpa:.05,network:3},t:"Fun class. It doesn't move your plan forward."})),
+         O("Take an honors or college-credit class","Tougher grading, looks great on applications.",["🧠","Honors class","My brain running at 110%"],()=>({fx:{gpa:-.05,skills:5,network:3},t:"It's a grind, but colleges and employers notice."}))]};
+  if(ch===2)return {title:"Senioritis is real",story:"<p>It's April. Your friends are skipping. You have a <b>C- in English 12</b>, and you need that credit to graduate.</p>",
+   opts:[O("Keep showing up and turn in every assignment","Finish strong.",["🎓","Me walking at graduation","Because I didn't play with English 12"],()=>({fx:{gpa:.05},t:"You graduate on time, no drama."})),
+         O("Ask your teacher for a plan to make up missing work","Use your resources.",["🙏","Asked my teacher for help","Teacher: finally, someone asked"],()=>({fx:{gpa:.1,network:5},t:"Your teacher gives you a checklist. You finish with a B-."})),
+         O("Skip with your friends. It's senior year","You've earned it, right?",["🏝️","Senior skip day","Every day"],()=>({fx:{gpa:-.25,network:3,delay:.25},t:"You end up in summer school to get the credit."}))]};
+  const y=ch*2-5,st=statusAt(y);
+  if(ch===3)return {title:"Pre-approved!",story:"<p>A credit card offer shows up: <b>$2,000 limit, 29% interest</b>. Your friend says it's basically free money.</p>",
+   opts:[O("Get it, use it only for gas, and pay it off every month","Build credit the smart way.",["💳","Paying my card in full every month","Credit score: 📈"],()=>{G.credit=true;return {fx:{},t:"Your credit score starts growing. That helps when you rent an apartment or buy a car."}}),
+         O("Get it, use it for whatever, and pay the minimum","Treat yourself.",["😬","Me paying the minimum","Interest: thanks for the donation 🙏"],()=>({fx:{debt:2500,energy:5},t:"Two years later you owe $2,500, and most of each payment goes to interest."})),
+         O("Skip it for now","No card, no risk.",["🙅","Credit card offer","Not today"],()=>({fx:{},t:"No debt. No credit history yet either."}))]};
+  if(ch===4)return {title:"The interview",story:"<p>You have a big interview next month for a "+(st==="train"?"program spot or job":"job")+". Your public social media has some party pics and a few posts you wouldn't show your grandma.</p>",
+   opts:[O("Clean up your accounts and make a professional profile","Google yourself first.",["🧼","Me deleting my 2027 posts","Right before the interview"],()=>({fx:{network:10},t:"The interviewer looked you up. They liked what they saw."})),
+         O("Set everything to private","Hide it and hope.",["🔒","Private account","Mostly private. Friends still tagged me"],()=>({fx:{network:3},t:"Safer, but a couple of tagged photos were still public."})),
+         O("Leave it. It's your life","Who even checks?",["📱","The hiring manager","Scrolled. Saw. Left you on read"],()=>({fx:{network:-10,energy:-5},t:"The hiring manager scrolled your page. You didn't get a call back."}))]};
+  const working=st==="career"||st==="pre-work"||(st==="train"&&(R.kind==="appr"||R.kind==="work"));
+  if(working){
+    const w=(st==="career"?wageForSim()*.85*G.wageMult:st==="pre-work"?MINW_YR:wageForSim()*.6);
+    const at=p=>Math.round(w*p*2*2/100)*100;
+    return {title:"Free money from your boss",story:"<p>Your employer will match whatever you put in a 401(k) retirement account, up to 5% of your pay. It comes out of your paycheck, but your boss adds the same amount.</p>",
+     opts:[O("Put in 5% and get the full match","Pay yourself first.",["👴","Me at 65","Thanking 24-year-old me"],()=>{G.retire=(G.retire||0)+at(5);return {fx:{cash:-Math.round(w*.05*2*.8)},t:"In two years you've saved about "+money(at(5))+" for retirement. Half of it is free money from your boss."}}),
+           O("Put in 2%","A little something.",["🤏","Me putting in 2%","Some free money is better than none"],()=>{G.retire=(G.retire||0)+at(2);return {fx:{cash:-Math.round(w*.02*2*.8)},t:"You've got about "+money(at(2))+" for retirement. You left some free money on the table."}}),
+           O("Skip it. You need the money now","Retirement is forever away.",["🤷","Skipping the 401(k) match","Literally declining free money"],()=>({fx:{},t:"Your paycheck is a little bigger. Your retirement account is $0."}))]};
+  }
+  return {title:"Family needs a hand",story:"<p>Your little brother needs $600 for football gear and a school trip. Your parents are short this month and ask if you can help.</p>",
+   opts:[O("Cover all of it","Family first.",["❤️","Being the big sibling","Who pays for stuff now"],()=>({fx:{cash:-600,network:5},t:"Your brother makes the trip. Your budget is tight for a month."})),
+         O("Split it with your parents, and help your brother find a summer job","Help, and teach him too.",["🤝","Me teaching my little brother","About earning his own money"],()=>({fx:{cash:-300,network:5,skills:2},t:"He pays you back by August. Everyone wins."})),
+         O("Tell them you can't this time","Protect your own budget.",["😔","Saying no to family","Hardest budget decision"],()=>({fx:{energy:-5},t:"Your budget is safe, but it feels bad. Your parents figure it out."}))]};
+}
+function decision(ch,i){return i===0?choiceA(ch):choiceB(ch)}
+const art=w=>/^[AEIOU]/i.test(w)?"an":"a";
+const low=t=>/^I[ ']/.test(t)?t:t.charAt(0).toLowerCase()+t.slice(1);
+
+/* ---------- Life Happens deck ---------- */
+const DECK=[
+ {id:"chem",cat:"grades",s:"hs",t:"Chemistry crash",x:"You fail the first chem test and fall behind.",fx:{gpa:-.3}},
+ {id:"binge",cat:"phone",s:"hs",t:"Two-week game binge",x:"A new game drops. You play until 2 a.m. for two weeks.",fx:{gpa:-.2,energy:-10}},
+ {id:"cousins",cat:"family",s:"hs",t:"Family needs you",x:"You pick up your younger cousins after school every day this semester.",fx:{gpa:-.15,energy:-10}},
+ {id:"skip",cat:"friends",s:"hs",t:"Skipping 6th period",x:"Your friends start skipping last period and want you to come.",fx:{gpa:-.2}},
+ {id:"ankle",cat:"health",s:"hs",t:"Sprained ankle",x:"You miss practice and two weeks of school.",fx:{gpa:-.15,energy:-10}},
+ {id:"noride",cat:"ride",s:"hs",t:"No ride",x:"Your ride to practice and work falls through for a month.",fx:{skills:-8,cash:-200}},
+ {id:"slump",cat:"motivation",s:"hs",t:"Winter slump",x:"It's February and school feels pointless.",fx:{gpa:-.2}},
+ {id:"phone",cat:"money",s:"hs",t:"Cracked phone",x:"Your screen shatters. The repair is $250.",fx:{cash:-250}},
+ {id:"pile",cat:"stress",s:"hs",t:"Everything due at once",x:"Big projects in three classes are due the same week.",fx:{energy:-15,gpa:-.1}},
+ {id:"summer",cat:"good",s:"hs",t:"A teacher notices",x:"Your teacher recommends you for a summer program in your career area.",fx:{skills:10,network:10}},
+ {id:"shadowluck",cat:"good",s:"hs",t:"Job shadow",x:"A family friend lets you shadow them at work for a day.",fx:{network:10,skills:3}},
+ {id:"trans",cat:"money",s:"post",t:"Transmission",x:"Your car's transmission goes out. $2,800.",fx:{cash:-2800}},
+ {id:"wait",cat:"rejected",s:"post",t:"Waitlisted",x:"You don't get into the program you wanted on the first try.",fx:{delay:.5,energy:-10},when:()=>statusNow()==="train"},
+ {id:"sick",cat:"health",s:"post",t:"Out sick",x:"You get really sick and miss three weeks of class and work.",fx:{cash:-1500,energy:-10,delay:.25}},
+ {id:"famem",cat:"family",s:"post",t:"Family emergency",x:"A family member gets sick. You help at home and send money for six months.",fx:{cash:-3000,energy:-15}},
+ {id:"roomie",cat:"money",s:"post",t:"Roommate bails",x:"Your roommate moves out and leaves you with $700 of rent.",fx:{cash:-700}},
+ {id:"vegas",cat:"friends",s:"post",t:"Vegas trip",x:"Your friends book a $1,200 trip and really want you to come.",fx:{cash:-1200}},
+ {id:"bnpl",cat:"phone",s:"post",t:"Buy now, pay later",x:"Small online orders add up to $900 you owe.",fx:{cash:-900}},
+ {id:"doubt",cat:"motivation",s:"post",t:"Doubt creeps in",x:"You start wondering if this career is really for you.",fx:{energy:-15,delay:.25}},
+ {id:"burn",cat:"stress",s:"post",t:"Burned out",x:"Work, school and family stack up for months.",fx:{energy:-20}},
+ {id:"dead",cat:"ride",s:"post",t:"Car dies",x:"Your car dies and there's no bus to work or class. You miss days.",fx:{cash:-800,energy:-10}},
+ {id:"fail",cat:"grades",s:"post",t:"Failed a class",x:"You fail a required class and have to retake it.",fx:{delay:.25,cash:-1000,gpa:-.2},when:()=>statusNow()==="train"&&S.G.R.kind==="school"},
+ {id:"schol",cat:"good",s:"post",t:"Surprise scholarship",x:"A local scholarship you applied for comes through.",fx:{cash:2000},when:()=>S.G.gpa>=3&&statusNow()==="train"},
+ {id:"mentor",cat:"good",s:"post",t:"A mentor",x:"Someone in your field takes you under their wing.",fx:{network:15,skills:5}},
+ {id:"raise",cat:"good",s:"post",t:"Raise",x:"Your boss notices your work and gives you a raise.",fx:{cash:2000},when:()=>["career","pre-work"].includes(statusNow())||S.G.R.kind==="appr"}
+];
+const DECK_M={chem:["🧪","Me after the first chem test","The F stands for Fine, right?"],binge:["🎮","Me at 2 a.m.","Just one more game"],cousins:["👶","Me picking up the cousins","Daycare employee of the month"],skip:["🚪","Friends: let's skip 6th","My attendance: 📉"],ankle:["🩼","Sprained ankle","Sad montage music plays"],noride:["🚶","No ride for a month","Walking everywhere like it's a side quest"],slump:["🥶","February","School feels like a loading screen"],phone:["📱","Cracked screen","Still swiping through the glass"],pile:["📚","Three projects due","Same week. Same day. Why"],summer:["🌟","A teacher noticed me","Main character moment"],shadowluck:["👀","Job shadow day","So that's what adults do all day"],trans:["🚗","Mechanic: it's the transmission","My wallet: 🫥"],wait:["⏳","Waitlisted","Character development arc"],sick:["🤒","Out sick for 3 weeks","47 missing assignments"],famem:["🫶","Family first","Even when it's hard"],roomie:["🏃","My roommate","Moved out. Left the rent"],vegas:["🎰","Friends: Vegas?","My bank account: absolutely not"],bnpl:["🛍️","Buy now, pay later","Later is now"],doubt:["🤔","Is this even my career?","Everybody, at some point"],burn:["🔋","Social battery","1%"],dead:["🪦","RIP my car","It had a good run"],fail:["📉","Failed a required class","See you next quarter"],schol:["🎉","Scholarship approved","Grades paid off. Literally"],mentor:["🧙","Found a mentor","Unlocked: cheat codes"],raise:["📈","Got a raise","Boss noticed. Big W"]};
+DECK.forEach(d=>d.m=DECK_M[d.id]);
+function memeHtml(m,sm){if(!m)return "";return '<div class="meme'+(sm?" sm":"")+'" role="img" aria-label="Meme: '+esc(m[1]+". "+m[2])+'"><span class="mt">'+esc(m[1])+'</span><span class="me">'+m[0]+'</span><span class="mb">'+esc(m[2])+'</span></div>'}
+function statusNow(){const ch=S.G.ch;return ch<3?"hs":statusAt(ch*2-5)}
+function deal(ch){
+  const G=S.G;if(G.cards[ch])return;
+  const stage=ch<3?"hs":"post";
+  const usedIds=Object.values(G.cards).flatMap(c=>c.ids);
+  let pool=DECK.filter(c=>c.s===stage&&!usedIds.includes(c.id)&&(!c.when||c.when()));
+  const bad=pool.filter(c=>c.cat!=="good").sort(()=>Math.random()-.5),good=pool.filter(c=>c.cat==="good").sort(()=>Math.random()-.5);
+  const ids=bad.slice(0,good.length&&Math.random()<.6?2:3).map(c=>c.id);
+  if(ids.length<3&&good.length)ids.push(good[0].id);
+  while(ids.length<3&&bad[ids.length])ids.push(bad[ids.length].id);
+  G.cards[ch]={ids:ids.sort(()=>Math.random()-.5),pick:null,shield:null,chips:[]};
+}
+
+/* ================= RENDER ================= */
+const PLAN_LABELS=["Getting started","Mission & 10-year career","10-year goal: personal","7-year goal","4-year goal","1-year goal","This month & daily goals","If…Then plans","Route check"];
+const GAME0=9,RESULTS=GAME0+18;
+function stepLabel(st){if(st<GAME0)return PLAN_LABELS[st];if(st<RESULTS){const ch=Math.floor((st-GAME0)/3);return "Chapter "+(ch+1)+" of 6 · "+CHAPTERS[ch].t+" · situation "+((st-GAME0)%3+1)+" of 3"}return "Your results"}
+function render(){
+  const st=S.step,p=$("#panel");
+  $("#progLabel").textContent=stepLabel(st);
+  $("#progBar").style.width=Math.round(st/RESULTS*100)+"%";
+  let h="";
+  if(st===0)h=vIntro();else if(st===1)h=vDest();else if(st===2)h=vTen();else if(st===3)h=vSeven();else if(st===4)h=vFour();
+  else if(st===5)h=vOne();else if(st===6)h=vDaily();else if(st===7)h=vIf();else if(st===8)h=vCheck();
+  else if(st<RESULTS){const ch=Math.floor((st-GAME0)/3),ph=(st-GAME0)%3;S.G.ch=ch;S.G.ph=ph;chapterStart(ch);h=ph<2?vChoice(ch,ph):vCard(ch)}
+  else h=vResults();
+  p.innerHTML=h;
+  renderSide();renderHdr();
+  bind();
+  save();
+}
+function navBtns(ok,nextLabel,msg){
+  return '<div class="nav"><button class="btn ghost" data-go="-1">Back</button><button class="btn" data-go="1"'+(ok?"":" disabled")+'>'+(nextLabel||"Next")+'</button></div>'+(ok||!msg?"":'<div class="need">'+msg+"</div>");
+}
+function optBtn(attr,val,on,title,desc,multi,dis){
+  return '<button type="button" class="opt'+(multi?" multi":"")+(on?" on":"")+'" '+attr+'="'+esc(val)+'" aria-pressed="'+(on?"true":"false")+'"'+(dis?" disabled":"")+'><span class="mark"></span><span><b>'+esc(title)+"</b>"+(desc?"<p>"+esc(desc)+"</p>":"")+"</span></button>";
+}
+
+function vIntro(){
+  return '<div class="eyebrow">Lesson 7.9 · Mission Map</div><h1>Will your plan get you there?</h1>'+
+  '<p class="lede">You made a 10-year Mission Map. Now test-drive it. Enter your plan from Handout 7.9, get a route check, then live the next 10 years in six chapters. You make choices, life throws surprises at you, and at the end you find out where you landed and how to make your plan stronger.</p>'+
+  '<div class="how"><div><b>1. Enter your plan</b><span>Top of the staircase down: 10-year, 7-year, 4-year, 1-year, this month and daily goals.</span></div><div><b>2. Route check</b><span>See if your steps actually connect to your goal.</span></div><div><b>3. Play 10 years</b><span>Freshman year to age 24. Your If…Then plans protect you when life happens.</span></div><div><b>4. Fix and rerun</b><span>Get tips, adjust your handout, and try again.</span></div></div>'+
+  '<div class="fields"><label class="f">First name<input type="text" id="nm" value="'+esc(S.name)+'" autocomplete="given-name"></label><label class="f">Class period<input type="text" id="pd" value="'+esc(S.period)+'"></label></div>'+
+  '<p class="hint" style="margin-top:12px">Have your Mission Map handout next to you.</p>'+
+  '<div class="nav"><span></span><button class="btn" data-go="1"'+(S.name.trim()?"":" disabled")+'>Start</button></div>';
+}
+function vDest(){
+  const c=career();
+  let h='<div class="eyebrow">Step 1 · Mission statement</div><h1>Where are you headed?</h1>'+
+  '<label class="f">My mission statement <span>Copy your 1–3 sentences from Step 1 of your handout.</span><textarea id="mission" placeholder="Example: to be an emergency room nurse where I can help people and their families">'+esc(S.mission)+'</textarea></label>'+
+  '<h2>My 10-year career goal</h2><p class="hint">Pick the career on your Mission Map, or the closest one. Not sure? Pick the one closest to your mission statement. You can play again with a different one.</p>';
+  if(c&&S.career!=="custom")h+=pickedCard(c);
+  h+='<input type="search" id="q" placeholder="Search careers" value="'+esc(S.q)+'" aria-label="Search careers">'+
+  '<div class="chips"><button class="chip'+(!S.group?" on":"")+'" data-grp="">All</button>'+CAR_GROUPS.map(g=>'<button class="chip'+(S.group===g?" on":"")+'" data-grp="'+esc(g)+'">'+esc(g)+'</button>').join("")+'</div>'+
+  '<div class="cars" id="cars">'+carsHtml()+'</div>'+
+  '<h2>Not on the list?</h2><div class="fields"><label class="f">My career<input type="text" id="cname" value="'+esc(S.cname)+'" placeholder="Example: athletic trainer"></label><label class="f">Training it needs<select id="cedu"><option value="">Choose one</option>'+Object.entries(CUSTOM_EDU).map(([k,v])=>'<option value="'+k+'"'+(S.cedu===k?" selected":"")+'>'+esc(v.l)+'</option>').join("")+'</select></label></div>'+
+  '<p class="hint" style="margin-top:6px">Not sure what training it needs? Ask your teacher, or look it up on the Bureau of Labor Statistics <a href="https://www.bls.gov/ooh/" target="_blank" rel="noopener" style="color:var(--crimson)">Occupational Outlook Handbook</a>.</p>';
+  return h+navBtns(!!c,"Next","Pick a career, or type yours and choose the training it needs.");
+}
+function carsHtml(){
+  const q=S.q.trim().toLowerCase();
+  const list=CAREERS.filter(c=>(!S.group||c.g===S.group)&&(!q||c.t.toLowerCase().includes(q)||c.g.toLowerCase().includes(q)));
+  if(!list.length)return '<p class="hint">No match. Use "Not on the list?" below.</p>';
+  return list.map(c=>{const lw=localWage(c);return '<button type="button" class="car'+(S.career===c.id?" on":"")+'" data-car="'+c.id+'" aria-pressed="'+(S.career===c.id)+'"><b>'+esc(c.t)+'</b><span>'+esc(c.g)+'</span><em>'+(lw?money(lw.w)+"/yr":"Varies")+'</em></button>'}).join("");
+}
+function pickedCard(c){
+  const lw=localWage(c);
+  return '<div class="picked"><div class="eyebrow">Your destination</div><div class="t">'+esc(c.t)+'</div><dl><dt>Training</dt><dd>'+esc(c.edu)+'</dd><dt>Pay</dt><dd>'+(lw?money(lw.w)+" median in the "+lw.where+(c.wageNote?" ("+esc(c.wageNote)+")":""):esc(c.wageNote||"Varies"))+'</dd><dt>Roads there</dt><dd>'+Object.keys(c.paths).map(k=>esc(PATHS[k].t)+" ("+fmtYrs(c.paths[k])+")").join(", ")+'</dd><dt>GPA to aim for</dt><dd>'+c.gpa.toFixed(1)+'+'+(c.comp?" (competitive)":"")+'</dd></dl></div>';
+}
+function vTen(){
+  const c=career();
+  return '<div class="eyebrow">Step 2 · 10-year goal (professional and personal)</div><h1>Year 10: 2036</h1><p class="lede">You\'ll be about 24. Professionally, you\'re aiming to be '+art(c.t)+' <b>'+esc(c.t)+'</b>. What about the rest of your life?</p>'+
+  '<h2>Where do you want to live?</h2><div class="opts two">'+Object.entries(LOCS10).map(([k,v])=>optBtn("data-loc",k,S.loc===k,v.t,"1-bedroom rent: "+money(v.r)+"/mo",false)).join("")+'</div>'+
+  '<h2>How do you want to live?</h2><div class="opts two">'+Object.entries(LIVE10).map(([k,v])=>optBtn("data-live10",k,S.live10===k,v.t,v.d,false)).join("")+'</div>'+
+  '<h2>Kids by year 10?</h2><div class="opts two">'+Object.entries(KIDS).map(([k,v])=>optBtn("data-kids",k,S.kids===k,v.t,v.c?"About "+money(v.c)+"/mo for child care and costs":"",false)).join("")+'</div>'+
+  '<h2>Anything else in your 10-year goal?</h2><textarea id="tenTxt" placeholder="Example: help my parents, travel to Mexico every summer, coach youth football">'+esc(S.tenTxt)+'</textarea>'+
+  navBtns(S.loc&&S.live10&&S.kids,"Next","Answer all three questions.");
+}
+function vSeven(){
+  return '<div class="eyebrow">Step 3 · 7-year goal (work experience, living conditions, social life)</div><h1>Year 7: 2033</h1><p class="lede">You\'re about 21. Where does your Mission Map say you\'ll be?</p>'+
+  '<div class="opts two">'+Object.entries(SEVEN).map(([k,v])=>optBtn("data-seven",k,S.seven===k,v.t,v.d,false)).join("")+'</div>'+
+  '<h2>Details from your handout</h2><textarea id="sevenTxt" placeholder="Example: in the nursing program at YVC, working as a CNA on weekends, living with two roommates in Yakima">'+esc(S.sevenTxt)+'</textarea>'+
+  navBtns(!!S.seven,"Next","Pick one.");
+}
+function vFour(){
+  const okPay=S.pay.length>0;
+  let h='<div class="eyebrow">Step 4 · 4-year goal (post-high school education and living environment)</div><h1>Year 4: Right after graduation</h1><p class="lede">It\'s 2030 and you just graduated with the class of 2030. What\'s your next step?</p>'+
+  '<div class="opts two">'+Object.entries(PATHS).map(([k,v])=>optBtn("data-path",k,S.path===k,v.t,v.d,false)).join("")+'</div>';
+  if(S.path==="univ")h+='<h2>Which school?</h2><div class="opts two">'+Object.entries(SCHOOLS).map(([k,v])=>optBtn("data-school",k,S.school===k,v.t,"Tuition and fees about "+money(v.tu)+"/yr before aid",false)).join("")+'</div>';
+  if(S.path==="cc")h+='<h2>After YVC</h2><div class="opts two">'+optBtn("data-transfer","1",S.transfer,"Transfer to a 4-year university","Finish a bachelor\'s degree after 2 years at YVC",true)+'</div>';
+  h+='<h2>Where will you live?</h2><div class="opts two">'+Object.entries(LIVE4).filter(([k])=>k!=="dorm"||S.path==="univ").map(([k,v])=>optBtn("data-live4",k,S.live4===k,v.t,v.d+" About "+money(v.yr)+"/yr.",false)).join("")+'</div>'+
+  '<h2>How will you pay for it?</h2><p class="hint">Pick all that are part of your plan.</p><div class="opts two">'+PAY.map(([k,t,d])=>optBtn("data-pay",k,has(S.pay,k),t,d,true)).join("")+'</div>';
+  const ok=S.path&&S.live4&&okPay&&(S.path!=="univ"||S.school)&&(S.live4!=="dorm"||S.path==="univ");
+  return h+navBtns(ok,"Next","Pick a path, where you'll live and at least one way to pay.");
+}
+function vOne(){
+  return '<div class="eyebrow">Step 5 · 1-year goal (measurable academic and personal goals)</div><h1>This school year</h1><p class="lede">Your freshman year. Make it measurable.</p>'+
+  '<h2>My GPA goal</h2><div class="opts two">'+Object.entries(GPAS).map(([k,v])=>optBtn("data-gpa",k,S.gpaT===k,v,"",false)).join("")+'</div>'+
+  '<h2>This year I will</h2><p class="hint">Pick everything on your handout.</p><div class="opts two">'+ACTS.map(a=>optBtn("data-act",a.id,has(S.acts,a.id),a.t,"",true)).join("")+'</div>'+
+  navBtns(!!S.gpaT,"Next","Pick a GPA goal.");
+}
+function vDaily(){
+  const w=S.www;
+  return '<div class="eyebrow">Step 6 · This month and daily goals</div><h1>The small stuff that adds up</h1><p class="lede">Your 10-year goal happens one day at a time. Pick the daily goals from the bottom of your staircase.</p>'+
+  '<h2>My daily goals</h2><div class="opts two">'+HABITS.map(a=>optBtn("data-hab",a.id,has(S.habits,a.id),a.t,"",true)).join("")+'</div>'+
+  '<h2>Staying on track: one monthly goal</h2><p class="hint">From Step 3 of your handout. Example: WHAT get above a B in chemistry, HOW self-quizzing and study groups, WHEN three nights before each test for 90 minutes, WHERE the kitchen table.</p>'+
+  '<div class="fields">'+["what","how","when","where"].map(k=>'<label class="f">'+k.toUpperCase()+'?<input type="text" data-www="'+k+'" value="'+esc(w[k])+'"></label>').join("")+'</div>'+
+  navBtns(true,"Next");
+}
+function vIf(){
+  const picked=Object.keys(S.ifs);
+  let h='<div class="eyebrow">Step 7 · Obstacles</div><h1>If… Then…</h1><p class="lede">Pick the 3 obstacles from your handout and write your Then. When one of these happens in the game, your plan kicks in and softens the hit.</p>'+
+  '<div class="opts two">'+Object.entries(OBS).map(([k,v])=>optBtn("data-obs",k,has(picked,k),"If… "+v.t.toLowerCase(),"",true,!has(picked,k)&&picked.length>=3)).join("")+'</div>';
+  if(picked.length)h+='<h2>My Then plans</h2><div class="opts">'+picked.map(k=>'<div class="ifrow"><b><span class="pre">If</span> '+esc(low(OBS[k].t))+'…</b><label class="f"><span class="pre" style="font-weight:700;color:var(--crimson)">Then…</span><input type="text" data-then="'+k+'" value="'+esc(S.ifs[k])+'" placeholder="'+esc(OBS[k].ex)+'"></label></div>').join("")+'</div>';
+  h+='<p class="count">'+picked.length+' of 3 picked</p>';
+  return h+navBtns(true,"Check my plan");
+}
+function vCheck(){
+  const cs=checks(),sc=scoreOf(cs),c=career();
+  let h='<div class="eyebrow">Route check</div><h1>Does your map connect?</h1><p class="lede">Before you drive, here\'s how your steps line up with your goal of becoming '+art(c.t)+' '+esc(c.t)+'. Green is solid, yellow needs work, red will cause problems.</p>'+
+  '<div class="score"><div class="ring" style="--p:'+sc+'"><b>'+sc+'</b></div><div><b style="font-family:var(--display);font-size:1.4rem;text-transform:uppercase">Plan strength</b><p class="hint" style="margin:0">'+(sc>=85?"Strong plan. Let's see if it holds up.":sc>=60?"Good start. A few weak spots.":"Your plan has gaps. Fix some now or drive it and see what happens.")+'</p></div></div>'+
+  '<div class="checks">'+cs.map(ckHtml).join("")+'</div>'+
+  '<div class="nav"><button class="btn ghost" data-go="-1">Back</button><button class="btn" id="play">Test-drive my plan</button></div>'+
+  '<details class="learn"><summary>How the route check works</summary><p>Each check is worth 10 points (yellow is 5). Training times, GPA targets and pay come from the career data in this game. Pay is the BLS May 2025 median, the middle of the range. New workers usually start lower.</p></details>';
+  return h;
+}
+function ckHtml(c){
+  return '<div class="ck '+c.st+'"><span class="ic">'+(c.st==="ok"?"✓":c.st==="warn"?"!":"✕")+'</span><div><b>'+esc(c.label)+'</b><p>'+esc(c.msg)+'</p>'+(c.fix?'<p><b style="display:inline;color:var(--fg)">Fix:</b> '+esc(c.fix)+'</p>':"")+(c.st!=="ok"&&c.go!=null&&S.step===8?'<div class="fix"><button class="btn ghost small" data-jump="'+c.go+'">Edit this</button></div>':"")+'</div></div>';
+}
+
+function storyHeader(ch){
+  const C0=CHAPTERS[ch];
+  return '<div class="eyebrow">Chapter '+(ch+1)+' · '+C0.yrs+' · age '+C0.age+'</div><h1>'+CH_E[ch]+' '+esc(C0.t)+'</h1>';
+}
+function recapHtml(ch){
+  const G=S.G,r=G.recap[ch-1];let h="";
+  const logs=G.log.filter(l=>l.ch===ch);
+  if(ch===3)h+='<p><b>High school is done.</b> You graduated with a '+G.hsGpa.toFixed(2)+' GPA.</p>';
+  if(r)h+='<div class="recap">Last two years: you brought in '+money(r.inc+r.aid)+(r.aid?" (including "+money(r.aid)+" in grants and scholarships)":"")+', paid '+money(r.tu)+' for school and '+money(r.live)+' to live. Savings now '+money(G.cash)+(G.debt?", debt "+money(G.debt):"")+'.</div>';
+  logs.forEach(l=>h+='<p class="recap" style="border:0;margin:0;padding-top:4px">'+esc(l.t)+'</p>');
+  return h;
+}
+function nowLine(ch){
+  if(ch<3)return "";
+  const G=S.G,c=career(),st=statusAt(ch*2-5),R=G.R;
+  const f=curFinish();
+  const m={train:R.kind==="appr"?"You're an apprentice on the road to "+c.t+".":R.kind==="mil"?"You're in the military, training for "+c.t+".":"You're in training for "+c.t+".",
+    career:"You're working as "+art(c.t)+" "+c.t+".",
+    mil:"You're serving in the military.",
+    "off-school":"You're in school, but it isn't the road to "+c.t+".",
+    "pre-work":"You're working full-time, not training for "+c.t+" yet."}[st];
+  return '<div class="where">'+esc(m)+(R.ok&&st!=="career"?" Expected finish: "+(f===Infinity?"not yet":yearOf(f)+" (age "+ageOf(f)+")")+".":"")+'</div>';
+}
+function vChoice(ch,i){
+  const G=S.G,key=ch+"-"+i,pk=G.picks[key],ci=pk?pk.snap:decision(ch,i);
+  let h=storyHeader(ch)+(i===0?nowLine(ch):"")+'<div class="story"><span class="sit">Situation '+(i+1)+' of 3</span>'+(ch>=3&&i===0?recapHtml(ch):"")+ci.story+'</div>';
+  h+='<h2>'+esc(ci.title)+'</h2>';
+  if(!pk){h+='<p class="hint">What would you do? Think about how each choice affects your plan.</p><div class="opts">'+ci.opts.map((o,j)=>optBtn("data-pick",j,false,o.l,o.d,false)).join("")+'</div>';}
+  else{const o=ci.opts[pk.i];h+='<div class="opts">'+ci.opts.map((o,j)=>optBtn("data-x",j,pk.i===j,o.l,o.d,false,pk.i!==j)).join("")+'</div>'+
+    '<div class="result"><b>What happened</b>'+esc(pk.t)+chips(pk.chips)+'</div>'+
+    '<div class="nav"><span></span><button class="btn" data-go="1">'+(i===0?"Next situation":"Life happens…")+'</button></div>';}
+  return h;
+}
+function vCard(ch){
+  deal(ch);
+  const G=S.G,cd=G.cards[ch];
+  let h=storyHeader(ch)+'<span class="sit">Situation 3 of 3</span><h2>Life happens</h2><p class="hint">Pick a card. You can\'t control what\'s on it, but your If…Then plans can soften the hit.</p><div class="deal">';
+  cd.ids.forEach((id,i)=>{const c=DECK.find(d=>d.id===id);const fl=cd.pick!=null;
+    h+='<button class="flip'+(fl?" flipped":"")+(cd.pick===i?" chosen":fl?" dim":"")+(c.cat==="good"?" good":"")+'" data-card="'+i+'"'+(fl?" disabled":"")+' aria-label="'+(fl?esc(c.t):"Face-down card "+(i+1))+'"><span class="flip-in"><span class="face back"><span class="q">?</span>Life happens</span><span class="face front"><span class="fe">'+(c.m?c.m[0]:"")+'</span><small>'+(c.cat==="good"?"Good news":esc(OBS[c.cat]?"If… "+low(OBS[c.cat].t):""))+'</small><b>'+esc(c.t)+'</b><p>'+esc(c.x)+'</p></span></span></button>'});
+  h+='</div>';
+  if(cd.pick!=null){
+    const c=DECK.find(d=>d.id===cd.ids[cd.pick]);
+    if(c.cat!=="good"){
+      if(cd.shield)h+='<div class="shield yes">Your If…Then plan kicked in, so the hit was cut in half.<q>If '+esc(low(OBS[c.cat].t))+', then '+esc(S.ifs[c.cat])+'</q></div>';
+      else h+='<div class="shield no">You didn\'t have an If…Then plan for "'+esc(low(OBS[c.cat].t))+'," so you took the full hit.</div>';
+    }
+    h+='<div class="result"><b>Result</b>'+chips(cd.chips.length?cd.chips:[[true,"No change"]])+'</div>';
+    h+='<div class="nav"><span></span><button class="btn" data-go="1">'+(ch===5?"See where you landed":"Next chapter")+'</button></div>';
+  }
+  return h;
+}
+
+/* ---------- results ---------- */
+function outcome(){
+  const G=S.G,c=career(),R=G.R,f=curFinish();
+  if(R.ok&&f<=6){const yrs=6-Math.ceil(f-1e-9);return {e:"🏆",cls:"",k:"Mission accomplished",t:"You became "+art(c.t)+" "+c.t+" in "+yearOf(f)+", at about age "+ageOf(f)+"."+(yrs>0?" By year 10 you've had "+yrs+" year"+(yrs===1?"":"s")+" on the job.":" You started right around year 10.")}}
+  if(R.ok&&R.start+R.yrs>6&&G.delay<=.5)return {e:"🧗",cls:"mid",k:"Right on schedule",t:c.t+" is a long road. At year 10 you're still in training, and you're on track to finish around "+yearOf(f)+" (age "+ageOf(f)+")."};
+  if(R.ok&&f<=9)return {e:"⏳",cls:"mid",k:"Almost there",t:"Detours pushed your finish to about "+yearOf(f)+" (age "+ageOf(f)+"). At year 10 you're still in training for "+c.t+", but you're on the road."};
+  if(R.ok)return {e:"🐌",cls:"low",k:"Long detour",t:"You're on the road to "+c.t+", but at this pace you'd finish around "+yearOf(f)+"."};
+  return {e:"🧭",cls:"low",k:"Off course",t:"At year 10 you're working, but you never got on the road to "+c.t+"."+(c.step?" A job like "+c.step.toLowerCase()+" could have been a first step.":"")};
+}
+function tips(){
+  const G=S.G,c=career(),cs=checks(),out=[];
+  const misses=[...new Set(G.misses)];
+  misses.forEach(m=>{if(!OBS[m])return;out.push(["Add an If…Then for \""+low(OBS[m].t)+"\"","It happened to you in the game. Example: If "+low(OBS[m].t)+", then "+low(OBS[m].ex)])});
+  if(G.crunch)out.push(["Plan for money running short","Money ran out "+G.crunch+" time"+(G.crunch>1?"s":"")+". File the FAFSA or WASFA every year, plan a part-time job, and keep loans as a backup so you don't have to drop classes."]);
+  if(G.log.some(l=>/GPA \(/.test(l.t)))out.push(["Your GPA cost you time",c.t+" programs look for about a "+c.gpa.toFixed(1)+". Raise your 1-year GPA goal and add study habits like homework every night and asking for help the same day."]);
+  cs.filter(x=>x.st!=="ok"&&x.fix&&!(x.k==="gpa"&&G.log.some(l=>/GPA \(/.test(l.t)))).forEach(x=>out.push([x.label,x.fix]));
+  const school=["univ","cc","cert"].includes(S.path);
+  if(school&&!G.rs)out.push(["Look at Running Start","Washington juniors and seniors can take college classes tuition-free at Yakima Valley College. It can cut time off your training."]);
+  if(S.path==="univ"&&S.school==="cwu")out.push(["Ask about CWU's Wildcat Promise","It's $5,000 a year for first-time students from Toppenish with full financial need, a 3.0 GPA and a dorm room. File the FAFSA or WASFA early."]);
+  if(S.path==="univ"&&S.school==="heritage")out.push(["Ask about Heritage's Eagle Scholarship","Heritage says it covers the gap for students whose Pell or Washington grants don't pay all of tuition."]);
+  if(S.path==="appr"||(c&&c.paths.appr!=null))out.push(["Apprenticeships pay you","Registered apprentices earn a paycheck from day one. Search L&I's list of Washington apprenticeship programs and ask about pre-apprenticeship classes."]);
+  if(G.debt>20000)out.push(["Watch the debt","You ended with "+money(G.debt)+" of debt. Big car payments and credit cards add up fast."]);
+  if(c&&c.g&&GROUP_TIP[c.g])out.push(["Start now for "+c.t,GROUP_TIP[c.g]]);
+  return out.slice(0,8);
+}
+function vResults(){
+  const G=S.G,c=career(),o=outcome(),cs=checks(),sc=scoreOf(cs),L=life10(),need=salaryNeeded(L.total*12),lw=localWage(c);
+  let h='<div class="eyebrow">Year 10 · 2036 · age 24</div><div class="outcome '+o.cls+'"><span class="oe" aria-hidden="true">'+o.e+'</span><small>'+esc(S.name)+'\'s Mission Map</small><b>'+esc(o.k)+'</b><p>'+esc(o.t)+'</p></div>';
+  h+='<div class="vgrid"><div class="vbox"><span>Plan strength</span><b>'+sc+'/100</b><p>From the route check</p></div><div class="vbox"><span>High school GPA</span><b>'+(G.hsGpa!=null?G.hsGpa.toFixed(2):"–")+'</b><p>Goal: '+esc(GPAS[S.gpaT]||"")+'</p></div><div class="vbox"><span>Savings</span><b>'+money(G.cash)+'</b></div><div class="vbox"><span>Debt</span><b>'+money(G.debt)+'</b></div>'+(G.retire?'<div class="vbox"><span>Retirement</span><b>'+money(G.retire)+'</b><p>401(k) with your boss\'s match</p></div>':"")+'<div class="vbox"><span>If…Then saves</span><b>'+G.used.length+'</b><p>'+G.misses.length+' hit'+(G.misses.length===1?"":"s")+' you didn\'t plan for</p></div></div>';
+  h+='<h2>Your 10 years</h2><ul class="tl">'+CHAPTERS.map((C0,i)=>{const pks=[G.picks[i+'-0'],G.picks[i+'-1']].filter(Boolean),cd=G.cards[i];const card=cd&&cd.pick!=null?DECK.find(d=>d.id===cd.ids[cd.pick]):null;
+    const logs=G.log.filter(l=>l.ch===i+1);
+    return '<li><b>'+CH_E[i]+' '+esc(C0.t)+' ('+C0.yrs+')</b>'+pks.map(pk=>'<span>'+esc(pk.snap.title)+': you chose "'+esc(pk.l)+'." '+esc(pk.t)+'</span>').join("")+(card?'<span>Life happened: '+esc(card.t)+(card.cat==="good"?"":cd.shield?" (your If…Then plan helped)":" (no plan for it)")+'</span>':"")+logs.map(l=>'<span>'+esc(l.t)+'</span>').join("")+'</li>'}).join("")+'</ul>';
+  h+='<h2>Can you afford your 10-year life?</h2><div class="vgrid"><div class="vbox"><span>Your life in '+esc((LOCS10[S.loc]||{}).t||"")+'</span><b>'+money(L.total)+'/mo</b><p>'+esc((LIVE10[S.live10]||{}).t||"")+(L.kids?", "+esc(KIDS[S.kids].t.toLowerCase()):"")+'</p></div><div class="vbox"><span>Salary you need</span><b>'+money(need)+'</b><p>Before taxes</p></div><div class="vbox"><span>'+esc(c.t)+' pay</span><b>'+(lw?money(lw.w):"Varies")+'</b><p>'+(lw?"Median, "+lw.where:esc(c.wageNote||""))+'</p></div></div>'+
+   '<p class="hint">'+(lw?(lw.w>=need?"The median pay covers this lifestyle. Starting pay is usually lower, so the first years may be tighter.":"The median pay doesn't cover this lifestyle. Roommates, a cheaper town or a higher-paying career would close the gap."):"")+' Want the full budget? Try it in <a href="'+RC_URL+'" target="_blank" rel="noopener" style="color:var(--crimson)">WA Reality Check</a>.</p>';
+  h+='<h2>How to make your Mission Map stronger</h2><ol class="tips">'+tips().map(([t,d])=>'<li><b>'+esc(t)+'</b>'+esc(d)+'</li>').join("")+'</ol>';
+  h+='<h2>Route check</h2><div class="checks">'+cs.map(ckHtml).join("")+'</div>';
+  const Q=[["q1","How does your mission statement and Mission Map inspire you?"],["q2","How does it open your eyes to what's important to you (in the next year, the next month, daily)?"],["q3","What are the things you must do daily to cross the gap from where you are to where you want to be?"],["q4","What's one change you'll make to your Mission Map handout after playing?"]];
+  h+='<h2>Reflect</h2><p class="hint">The first three go on the back of your poster.</p><div class="qs">'+Q.map(([k,q])=>'<label class="f">'+esc(q)+'<textarea data-ans="'+k+'">'+esc(S.ans[k]||"")+'</textarea></label>').join("")+'</div>';
+  h+='<div class="again"><div><b>Turn it in or try again</b><p class="hint" style="margin:0">Copy your results to paste into Google Classroom. Rerun with the same plan for new surprises, or change your plan and see what happens.</p></div><div class="again-btns"><button class="btn" id="copy">Copy my results</button><button class="btn ghost" id="replay">Play again</button><button class="btn ghost" id="edit">Change my plan</button><button class="btn ghost" id="reset">Start over</button></div></div><div id="msg"></div>';
+  h+='<details class="learn"><summary>How the game does the math</summary><p>Pay is the BLS May 2025 median for Washington or the Yakima area. In the game, new workers earn 85% of the median and apprentices earn 60% while they learn. Taxes use 2026 federal brackets plus Social Security, Medicare, WA Paid Leave and WA Cares (Washington has no state income tax). Tuition and fees: CWU '+money(SCHOOLS.cwu.tu)+', Heritage '+money(SCHOOLS.heritage.tu)+' before aid, YVC about '+money(TU_CC)+'. Other numbers are estimates: technical programs about '+money(TU_CERT)+'/yr, a 20-hour job in school '+money(15000)+'/yr, military pay $24,000/yr with housing and food covered, living at home '+money(LIVE4.home.yr)+'/yr including personal costs. If you file the FAFSA or WASFA, the game assumes your family qualifies for a full Washington College Grant plus some Pell Grant money. Many Toppenish families do, but it depends on income. Rent is HUD 2026 Fair Market Rent and home prices are 2025 county medians, the same as WA Reality Check.</p></details>';
+  h+='<p class="src">Sources: <a href="https://www.bls.gov/oes/" target="_blank" rel="noopener">BLS Occupational Employment and Wage Statistics</a>, <a href="https://wsac.wa.gov/wcg" target="_blank" rel="noopener">Washington College Grant (WSAC)</a>, <a href="https://www.cwu.edu/admissions-aid/cost-aid-value" target="_blank" rel="noopener">CWU costs</a>, <a href="https://www.cwu.edu/admissions-aid/financial-aid-scholarships/scholarships/merit-based-scholarships.php" target="_blank" rel="noopener">CWU Wildcat Promise</a>, <a href="https://heritage.edu/about-heritage-university/fast-facts/" target="_blank" rel="noopener">Heritage University</a>, <a href="https://www.lni.wa.gov/licensing-permits/apprenticeship/become-an-apprentice" target="_blank" rel="noopener">L&amp;I apprenticeship</a>.</p>';
+  return h;
+}
+function resultsText(){
+  const G=S.G,c=career(),o=outcome(),cs=checks();
+  const lines=["MISSION MAP CHECK","Name: "+S.name+(S.period?"  |  Period: "+S.period:""),"","Mission statement: "+(S.mission||"(blank)"),"10-year career goal: "+c.t,
+   "Result: "+o.k+". "+o.t,"Plan strength: "+scoreOf(cs)+"/100","High school GPA in the game: "+(G.hsGpa!=null?G.hsGpa.toFixed(2):"–")+" (goal "+(GPAS[S.gpaT]||"")+")",
+   "Savings at year 10: "+money(G.cash)+"  |  Debt: "+money(G.debt),"","ROUTE CHECK"];
+  cs.forEach(x=>lines.push((x.st==="ok"?"[OK] ":x.st==="warn"?"[FIX] ":"[PROBLEM] ")+x.label+": "+x.msg));
+  lines.push("","TIPS");tips().forEach(([t,d],i)=>lines.push((i+1)+". "+t+": "+d));
+  lines.push("","REFLECTION");
+  [["q1","How does your Mission Map inspire you?"],["q2","What's important to you?"],["q3","What must you do daily?"],["q4","What will you change?"]].forEach(([k,q])=>lines.push(q+" "+(S.ans[k]||"")));
+  return lines.join("\n");
+}
+
+/* ---------- sidebar & header ---------- */
+function renderSide(){
+  const s=$("#side"),st=S.step;
+  if(st<GAME0){
+    const c=career(),R=route();
+    const row=(n,lab,val,done,cur,cls)=>'<div class="st'+(done?" done":"")+(cur?" cur":"")+(cls?" "+cls:"")+'"><i>'+n+'</i><div><b>'+lab+'</b><span>'+(val?esc(val):'<span style="color:var(--muted)">…</span>')+'</span></div></div>';
+    s.innerHTML='<h3>My Mission Map</h3><div class="who">'+esc(S.name||"Your name")+(S.period?" · Period "+esc(S.period):"")+'</div><div class="stair">'+
+     row("★","Mission","" + (S.mission.trim()?S.mission.trim().slice(0,90)+(S.mission.trim().length>90?"…":""):""),!!S.mission.trim(),st===1,"mission")+
+     row(5,"10-year goal",c?c.t+(S.loc?", "+LOCS10[S.loc].t:""):"",!!(c&&S.loc),st===1||st===2)+
+     row(4,"7-year goal",S.seven?SEVEN[S.seven].t:"",!!S.seven,st===3)+
+     row(3,"4-year goal",S.path?PATHS[S.path].t+(S.path==="univ"&&S.school?": "+SCHOOLS[S.school].t:"")+(S.path==="cc"&&S.transfer?", then transfer":""):"",!!S.path,st===4)+
+     row(2,"1-year goal",S.gpaT?"GPA "+GPAS[S.gpaT]+(S.acts.length?", "+S.acts.length+" activit"+(S.acts.length===1?"y":"ies"):""):"",!!S.gpaT,st===5)+
+     row(1,"This month & daily",S.habits.length?S.habits.length+" daily goal"+(S.habits.length===1?"":"s"):"",S.habits.length>0,st===6)+
+     row("!","If… Then…",ifsDone().length?ifsDone().length+" of 3 plans":"",ifsDone().length>0,st===7)+
+     '</div>'+(c&&st>=4&&S.path?'<p class="hint" style="margin:12px 0 0">Road: '+esc(routeLabel(R))+'</p>':"");
+    return;
+  }
+  const G=S.G,c=career();
+  const bar=(lab,val,max,disp)=>'<div class="m"><div class="lab"><span>'+lab+'</span><b>'+disp+'</b></div><div class="mbar'+(val/max<.3?" low":"")+'"><i style="width:'+clamp(val/max*100,0,100)+'%"></i></div></div>';
+  s.innerHTML='<h3>'+esc(S.name||"You")+'</h3><div class="who">Goal: '+esc(c?c.t:"")+'</div><div class="meters">'+
+   bar(G.ch<3&&st<RESULTS?"📚 GPA":"📚 Grades",G.gpa,4,G.gpa.toFixed(2))+bar("🛠️ Skills",G.skills,100,Math.round(G.skills))+bar("🤝 Network",G.network,100,Math.round(G.network))+bar("⚡ Energy",G.energy,100,Math.round(G.energy))+
+   '<div class="money"><div><span>💰 Savings</span><b>'+money(G.cash)+'</b></div><div><span>💳 Debt</span><b>'+money(G.debt)+'</b></div></div></div>'+
+   '<p class="hint" style="margin:12px 0 0">If…Then plans: '+(ifsDone().map(k=>esc(low(OBS[k].t))).join("; ")||"none")+'</p>';
+}
+function renderHdr(){
+  const st=S.step,el=$("#hdrStats");
+  if(st<GAME0){const c=career();el.innerHTML=c&&st>=2?'<div class="hdr-total"><span>Plan strength</span><b>'+scoreOf(checks())+'/100</b></div>':"";return}
+  if(st<RESULTS){const ch=Math.floor((st-GAME0)/3);el.innerHTML='<div class="hdr-total"><span>Years</span><b>'+CHAPTERS[ch].yrs+'</b></div><div class="hdr-total"><span>Age</span><b>'+CHAPTERS[ch].age+'</b></div>';return}
+  el.innerHTML='<div class="hdr-total"><span>Year 10</span><b>2036</b></div>';
+}
+
+/* ---------- events ---------- */
+function go(d){
+  let n=S.step+d;
+  if(S.step===GAME0&&d<0)n=8;
+  if(S.step>=GAME0&&S.step<RESULTS&&d>0&&(S.step-GAME0)%3===2){const ch=Math.floor((S.step-GAME0)/3);if(ch>=3)simChapter(ch)}
+  S.step=clamp(n,0,RESULTS);render();
+  try{window.scrollTo({top:0})}catch(e){}
+}
+function toggle(arr,v){const i=arr.indexOf(v);if(i>=0)arr.splice(i,1);else arr.push(v)}
+function bind(){
+  $$("[data-go]").forEach(b=>b.onclick=()=>go(+b.dataset.go));
+  $$("[data-jump]").forEach(b=>b.onclick=()=>{S.step=+b.dataset.jump;render()});
+  const inp=(id,key)=>{const e=$("#"+id);if(e)e.oninput=()=>{S[key]=e.value;save();
+    if(key==="name"){const n=$('[data-go="1"]');if(n)n.disabled=!e.value.trim()}
+    if(key==="mission")renderSide()}};
+  inp("nm","name");inp("pd","period");inp("mission","mission");inp("tenTxt","tenTxt");inp("sevenTxt","sevenTxt");
+  const q=$("#q");if(q)q.oninput=()=>{S.q=q.value;$("#cars").innerHTML=carsHtml();bindCars();save()};
+  $$("[data-grp]").forEach(b=>b.onclick=()=>{S.group=b.dataset.grp;render()});
+  bindCars();
+  const cn=$("#cname"),ce=$("#cedu");
+  const custom=()=>{S.cname=cn.value;S.cedu=ce.value;if(S.cname.trim()&&S.cedu){S.career="custom"}else if(S.career==="custom")S.career="";save();
+    const n=$('[data-go="1"]');if(n)n.disabled=!career();$$(".car").forEach(x=>x.classList.toggle("on",x.dataset.car===S.career));renderSide()};
+  if(cn){cn.oninput=custom;ce.onchange=custom}
+  const one=(attr,key)=>$$("["+attr+"]").forEach(b=>b.onclick=()=>{S[key]=b.getAttribute(attr);if(key==="path"){if(S.path!=="univ"){S.school="";if(S.live4==="dorm")S.live4=""}if(S.path!=="cc")S.transfer=false}render()});
+  one("data-loc","loc");one("data-live10","live10");one("data-kids","kids");one("data-seven","seven");one("data-path","path");one("data-school","school");one("data-live4","live4");one("data-gpa","gpaT");
+  $$("[data-transfer]").forEach(b=>b.onclick=()=>{S.transfer=!S.transfer;render()});
+  $$("[data-pay]").forEach(b=>b.onclick=()=>{const v=b.dataset.pay;if(v==="none")S.pay=has(S.pay,"none")?[]:["none"];else{S.pay=S.pay.filter(x=>x!=="none");toggle(S.pay,v)}render()});
+  $$("[data-act]").forEach(b=>b.onclick=()=>{toggle(S.acts,b.dataset.act);render()});
+  $$("[data-hab]").forEach(b=>b.onclick=()=>{toggle(S.habits,b.dataset.hab);render()});
+  $$("[data-www]").forEach(e=>e.oninput=()=>{S.www[e.dataset.www]=e.value;save()});
+  $$("[data-obs]").forEach(b=>b.onclick=()=>{const k=b.dataset.obs;if(k in S.ifs)delete S.ifs[k];else if(Object.keys(S.ifs).length<3)S.ifs[k]="";render()});
+  $$("[data-then]").forEach(e=>e.oninput=()=>{S.ifs[e.dataset.then]=e.value;save();renderSide()});
+  $$("[data-ans]").forEach(e=>e.oninput=()=>{S.ans[e.dataset.ans]=e.value;save()});
+  const pl=$("#play");if(pl)pl.onclick=()=>{newGame();S.step=GAME0;render();try{window.scrollTo({top:0})}catch(e){}};
+  $$("[data-pick]").forEach(b=>b.onclick=()=>{
+    const ch=S.G.ch,ph=S.G.ph,ci=decision(ch,ph),i=+b.dataset.pick,o=ci.opts[i];
+    const snap={title:ci.title,story:ci.story,opts:ci.opts.map(x=>({l:x.l,d:x.d,m:x.m}))};const r=o.run();
+    S.G.picks[ch+"-"+ph]={i,l:o.l,t:r.t,chips:fx(r.fx||{}),snap};render()});
+  $$("[data-card]").forEach(b=>b.onclick=()=>{
+    const G=S.G,ch=G.ch,cd=G.cards[ch];if(cd.pick!=null)return;
+    const i=+b.dataset.card,c=DECK.find(d=>d.id===cd.ids[i]);
+    const sh=c.cat!=="good"&&(S.ifs[c.cat]||"").trim().length>=3;
+    cd.pick=i;cd.shield=sh;cd.chips=fx(c.fx,sh);
+    if(c.cat!=="good"){if(sh)G.used.push(c.cat);else G.misses.push(c.cat)}
+    render()});
+  const cp=$("#copy");if(cp)cp.onclick=()=>{
+    const t=resultsText(),m=$("#msg");
+    const fallback=()=>{m.innerHTML='<p class="hint">Copy didn\'t work here. Select all of this text and copy it:</p><textarea style="min-height:200px" readonly>'+esc(t)+'</textarea>';const ta=m.querySelector("textarea");ta.focus();ta.select()};
+    try{navigator.clipboard.writeText(t).then(()=>{m.innerHTML='<p class="copied">Copied. Paste it into your assignment.</p>'},fallback)}catch(e){fallback()}};
+  const rp=$("#replay");if(rp)rp.onclick=()=>{newGame();S.step=GAME0;render();try{window.scrollTo({top:0})}catch(e){}};
+  const ed=$("#edit");if(ed)ed.onclick=()=>{S.G=null;S.step=8;render();try{window.scrollTo({top:0})}catch(e){}};
+  const rs=$("#reset");if(rs)rs.onclick=()=>{$("#msg").innerHTML='<div class="confirm">Erase your whole plan and start over? <button class="btn small" id="yes">Yes, start over</button><button class="btn ghost small" id="no">Cancel</button></div>';
+    $("#yes").onclick=()=>{const n=S.name,p=S.period;S=FRESH();S.name=n;S.period=p;S.step=1;render();try{window.scrollTo({top:0})}catch(e){}};
+    $("#no").onclick=()=>{$("#msg").innerHTML=""}};
+}
+function bindCars(){$$("[data-car]").forEach(b=>b.onclick=()=>{S.career=b.dataset.car;render()})}
+
+if(S.step>=GAME0&&!S.G){S.step=8}
+render();
+</script>
+</body>
+</html>
